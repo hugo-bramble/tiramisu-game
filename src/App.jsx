@@ -261,7 +261,8 @@ function Welcome({ onStart }) {
     // Unlock audio on every welcome interaction so iOS context is firmly bound
     try { unlockAudio(); } catch (e) {}
     setStep(s => {
-      const ns = s + 1;
+      // Cap at READY_STEP so double-taps don't push past the rendered range
+      const ns = Math.min(s + 1, READY_STEP);
       if (ns >= PROFILE_STEP) { try { localStorage.setItem('tiramisu_seen_intro', '1'); } catch (e) {} }
       return ns;
     });
@@ -443,7 +444,7 @@ function Welcome({ onStart }) {
         animate={{ scale: 1, opacity: 1, x: 0 }}
         exit={{ scale: 0.92, opacity: 0, x: -30 }}
         transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-        className="relative bg-surface border border-[rgba(74,40,24,0.1)] rounded-[24px] px-5 py-6 text-center max-w-sm w-full shadow-large"
+        className="relative bg-surface border border-[rgba(74,40,24,0.1)] rounded-[24px] px-5 py-6 text-center max-w-sm w-full shadow-large max-h-[92vh] overflow-y-auto"
       >
         {/* Step pips */}
         <div className="absolute top-3 left-0 right-0 flex justify-center gap-1.5">
@@ -2095,8 +2096,9 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
       i += 1;
     };
 
+    let awaitingNext = false;
     const handler = (type) => {
-      if (!aliveRef.current || phaseRef.current !== 'active') return;
+      if (!aliveRef.current || phaseRef.current !== 'active' || awaitingNext) return;
       const currentIdx = i - 1;
       if (currentIdx < 0 || currentIdx >= sequence.length) return;
       if (type === sequence[currentIdx]) {
@@ -2104,7 +2106,8 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
         sfx.perfect();
         setHits(h => h + 1);
         setShowIdx(-1);
-        setTimeout(advance, 280); // breathing room between ingredients
+        awaitingNext = true; // block spam-taps until next ingredient appears
+        setTimeout(() => { awaitingNext = false; advance(); }, 280);
       } else {
         clearTimeout(hitTimerRef.current);
         sfx.miss();
