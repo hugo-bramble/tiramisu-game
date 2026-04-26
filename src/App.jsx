@@ -1670,8 +1670,8 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
                 <p className="text-[12px] text-ink3 mt-1">Hit {hits} / {sequence.length}</p>
               </div>
 
-              {/* Flashing target ingredient */}
-              <div className="flex-1 flex items-center justify-center w-full">
+              {/* Flashing target ingredient with shrinking hit-window timer */}
+              <div className="flex-1 flex items-center justify-center w-full relative">
                 <AnimatePresence mode="wait">
                   {showIdx >= 0 && (
                     <motion.div
@@ -1680,10 +1680,18 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
                       animate={{ scale: 1, rotate: 0, opacity: 1 }}
                       exit={{ scale: 1.2, opacity: 0 }}
                       transition={{ type: 'spring', stiffness: 380, damping: 18 }}
-                      className={`w-[140px] h-[140px] rounded-[28px] flex items-center justify-center text-[80px] btn-${sequence[showIdx]} shadow-large`}
+                      className={`relative w-[150px] h-[150px] rounded-[30px] flex items-center justify-center text-[80px] btn-${sequence[showIdx]} shadow-large`}
                       style={{ boxShadow: '0 0 0 6px rgba(201,123,26,0.25), 0 12px 40px rgba(74,40,24,0.3)' }}
                     >
                       {ICONS[sequence[showIdx]]}
+                      {/* Hit-window shrinking ring */}
+                      <motion.div
+                        key={'ring-' + showIdx}
+                        initial={{ scale: 1.35, opacity: 0.85 }}
+                        animate={{ scale: 1.0, opacity: 0 }}
+                        transition={{ duration: hitWindow / 1000, ease: 'linear' }}
+                        className="absolute inset-0 rounded-[30px] border-[4px] border-gold pointer-events-none"
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
