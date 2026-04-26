@@ -231,9 +231,11 @@ function FlagStripe() {
 
 // ─── WELCOME ─────────────────────────────────────────────────────────────────
 function Welcome({ onStart }) {
-  // Skip cinematic if user has seen it before
+  // Step phases: 0..4 cinematic, 5 = profile, 6 = ready
   const seenIntro = (() => { try { return localStorage.getItem('tiramisu_seen_intro') === '1'; } catch (e) { return false; } })();
-  const [step, setStep] = useState(seenIntro ? 99 : 0); // 99 = jump straight to rules
+  const PROFILE_STEP = 5;
+  const READY_STEP = 6;
+  const [step, setStep] = useState(seenIntro ? PROFILE_STEP : 0);
   const personalBest = getBest();
   const [name, setName] = useState(() => getUsername());
   const [team, setTeamState] = useState(() => getTeam());
@@ -257,8 +259,7 @@ function Welcome({ onStart }) {
   const board = isGlobal && globalBoard ? globalBoard : localBoard;
   const next = () => setStep(s => {
     const ns = s + 1;
-    // Mark intro as seen when user reaches the rules card
-    if (ns >= 5) { try { localStorage.setItem('tiramisu_seen_intro', '1'); } catch (e) {} }
+    if (ns >= PROFILE_STEP) { try { localStorage.setItem('tiramisu_seen_intro', '1'); } catch (e) {} }
     return ns;
   });
 
@@ -433,116 +434,111 @@ function Welcome({ onStart }) {
           'radial-gradient(circle at 58% 92%, rgba(255,255,255,0.4) 0.8px, transparent 2px)',
       }} />
       <motion.div
-        initial={{ scale: 0.92, opacity: 0, y: 14 }} animate={{ scale: 1, opacity: 1, y: 0 }}
+        key={step}
+        initial={{ scale: 0.92, opacity: 0, x: 30 }}
+        animate={{ scale: 1, opacity: 1, x: 0 }}
+        exit={{ scale: 0.92, opacity: 0, x: -30 }}
         transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-        className="relative bg-surface border border-[rgba(74,40,24,0.1)] rounded-[28px] p-7 pb-5 text-center max-w-sm w-full shadow-large"
+        className="relative bg-surface border border-[rgba(74,40,24,0.1)] rounded-[24px] px-5 py-6 text-center max-w-sm w-full shadow-large"
       >
-        <div className="text-[56px] mb-1 leading-none select-none">🍰</div>
-        <h2 className="text-[26px] font-black text-ink tracking-tight mb-1 leading-tight">How to play</h2>
-        <div className="text-[11px] text-gold font-extrabold tracking-[2px] uppercase mb-3">Four things to know</div>
-        {personalBest > 0 && (
-          <div className="text-[12px] text-ink2 font-semibold mb-3 px-3 py-1.5 bg-surface2 rounded-full inline-flex items-center gap-1.5">
-            <span className="text-[10px] text-ink3 font-bold tracking-wider uppercase">Your best</span>
-            <span className="text-ink font-extrabold">{fmt(personalBest)}m</span>
-          </div>
-        )}
+        {/* Step pips */}
+        <div className="absolute top-3 left-0 right-0 flex justify-center gap-1.5">
+          {[PROFILE_STEP, READY_STEP].map(s => (
+            <div key={s} className={`h-[5px] rounded-full transition-all ${step === s ? 'w-5 bg-gold' : step > s ? 'w-[5px] bg-gold/60' : 'w-[5px] bg-[rgba(74,40,24,0.15)]'}`} />
+          ))}
+        </div>
 
-        {/* Username input — prominent for leaderboard */}
-        <div className="mb-4 bg-surface2 rounded-[14px] p-3 border border-[rgba(74,40,24,0.12)]">
-          <div className="text-[10px] uppercase tracking-[1.5px] font-extrabold text-gold mb-1.5 flex items-center justify-center gap-1">
-            <span>🏆</span><span>Leaderboard name</span>
-          </div>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => { setName(e.target.value); setUsernameLocal(e.target.value); }}
-            placeholder="Type your name…"
-            maxLength={20}
-            className="w-full px-3 py-2.5 rounded-[10px] border-2 border-[rgba(74,40,24,0.15)] bg-surface text-[14px] text-ink font-bold text-center focus:outline-none focus:border-gold transition-colors"
-          />
-          {!name && <div className="text-[10px] text-ink3 mt-1.5 text-center italic">Without a name your scores show as "Anonymous"</div>}
+        {step === PROFILE_STEP && (
+          <>
+            <div className="text-[44px] mb-1 leading-none select-none mt-2">👋</div>
+            <h2 className="text-[22px] font-black text-ink tracking-tight leading-tight mb-1">Who are you?</h2>
+            <p className="text-[12px] text-ink2 mb-5 px-2">For the global leaderboard. Pick a side.</p>
 
-          {/* Team selector */}
-          <div className="mt-3">
-            <div className="text-[10px] uppercase tracking-[1.5px] font-extrabold text-ink3 mb-1.5 text-center">Pick your side</div>
-            <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => { setName(e.target.value); setUsernameLocal(e.target.value); }}
+              placeholder="🏆  Your name"
+              maxLength={20}
+              autoFocus
+              className="w-full px-3 py-3 mb-3 rounded-[12px] border border-[rgba(74,40,24,0.15)] bg-surface2 text-[15px] text-ink font-bold text-center focus:outline-none focus:border-gold"
+            />
+            <div className="grid grid-cols-2 gap-2 mb-5">
               <button
                 onClick={() => { setTeamState('GB'); setTeamLocal('GB'); }}
-                className={`py-2.5 px-2 rounded-[10px] flex items-center justify-center gap-1.5 text-[12px] font-bold transition-all ${team === 'GB' ? 'bg-cocoa text-mascarpone shadow-[0_4px_14px_rgba(74,40,24,0.3)] scale-105' : 'bg-surface text-ink2 border-2 border-[rgba(74,40,24,0.12)] hover:border-cocoa'}`}
+                className={`py-3 px-2 rounded-[12px] flex flex-col items-center justify-center gap-0.5 text-[12px] font-bold transition-all ${team === 'GB' ? 'bg-cocoa text-mascarpone shadow-[0_4px_12px_rgba(74,40,24,0.3)]' : 'bg-surface2 text-ink2 border border-[rgba(74,40,24,0.12)]'}`}
               >
-                <span className="text-[18px]">🇬🇧</span><span>British</span>
+                <span className="text-[26px] leading-none">🇬🇧</span><span>British</span>
               </button>
               <button
                 onClick={() => { setTeamState('IT'); setTeamLocal('IT'); }}
-                className={`py-2.5 px-2 rounded-[10px] flex items-center justify-center gap-1.5 text-[12px] font-bold transition-all ${team === 'IT' ? 'bg-cocoa text-mascarpone shadow-[0_4px_14px_rgba(74,40,24,0.3)] scale-105' : 'bg-surface text-ink2 border-2 border-[rgba(74,40,24,0.12)] hover:border-cocoa'}`}
+                className={`py-3 px-2 rounded-[12px] flex flex-col items-center justify-center gap-0.5 text-[12px] font-bold transition-all ${team === 'IT' ? 'bg-cocoa text-mascarpone shadow-[0_4px_12px_rgba(74,40,24,0.3)]' : 'bg-surface2 text-ink2 border border-[rgba(74,40,24,0.12)]'}`}
               >
-                <span className="text-[18px]">🇮🇹</span><span>Italian</span>
+                <span className="text-[26px] leading-none">🇮🇹</span><span>Italian</span>
               </button>
             </div>
-            {team === 'GB' && <div className="text-[10px] text-ink3 mt-1.5 text-center italic">"Brilliant attempt, old chap" 🇬🇧</div>}
-            {team === 'IT' && <div className="text-[10px] text-ink3 mt-1.5 text-center italic">"Sangue italiano! Forza!" 🇮🇹</div>}
-          </div>
-        </div>
+            {team === 'GB' && <p className="text-[11px] text-ink3 mb-3 italic">"Brilliant attempt, old chap"</p>}
+            {team === 'IT' && <p className="text-[11px] text-ink3 mb-3 italic">"Sangue italiano! Forza!"</p>}
 
-        <ul className="text-left mb-4 space-y-3">
-          <HowItem icon="👆">Tap when the marker hits <b className="text-successgreen">green</b> for perfetto.</HowItem>
-          <HowItem icon="🔥">Stack perfetti to grow your <b className="text-gold">×8 multiplier</b>. A miss resets it.</HowItem>
-          <HowItem icon="☕">Every 5 perfetti earns an <b className="text-gold">espresso</b>. Tap it to slow the meter for 4 layers — save it for late game.</HowItem>
-          <HowItem icon="🧠">Mini-rounds (memory · customer order) appear between slices. <b className="text-errorred">Fail = −1 heart.</b></HowItem>
-          <HowItem icon="🏆">Beat other players on the <b className="text-gold">global leaderboard</b>. Pass them mid-run for celebration.</HowItem>
-        </ul>
+            <button
+              onClick={next}
+              disabled={!team}
+              className={`block w-full py-3 rounded-[12px] text-[13px] font-extrabold uppercase tracking-wider transition-transform ${team ? 'bg-cocoa text-mascarpone active:scale-[0.97]' : 'bg-[rgba(74,40,24,0.1)] text-ink3'}`}
+            >
+              {team ? 'Continue →' : 'Pick a side'}
+            </button>
+            {seenIntro && (
+              <button onClick={() => setStep(0)} className="block w-full pt-3 text-[10px] text-ink3 underline">Watch intro again</button>
+            )}
+          </>
+        )}
 
-        {/* Inline leaderboard preview — top 3 */}
-        {board.length > 0 && (
-          <div className="mb-4 p-3 bg-surface2 rounded-[14px] text-left border border-[rgba(74,40,24,0.08)]">
-            <div className="text-[10px] uppercase tracking-[1.5px] text-ink3 font-extrabold mb-2 flex items-center gap-1.5 justify-center">
-              <span>🏆</span><span>{isGlobal ? 'Top players globally' : 'Best runs (this device)'}</span>
-            </div>
-            {loadingGlobal && <div className="text-center text-[11px] text-ink3 py-2 italic">Loading…</div>}
-            {!loadingGlobal && (
-              <div className="space-y-1">
-                {board.slice(0, 3).map((entry, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[12px] py-1 px-2 rounded-md bg-surface">
-                    <span className={`w-4 font-extrabold ${i === 0 ? 'text-gold' : i === 1 ? 'text-ink' : 'text-ink2'}`}>{i + 1}</span>
+        {step >= READY_STEP && (
+          <>
+            <div className="text-[44px] mb-1 leading-none select-none mt-2">🍰</div>
+            <h2 className="text-[22px] font-black text-ink tracking-tight leading-tight">Ready, {name || 'Anonymous'}?</h2>
+            <p className="text-[10px] text-gold font-extrabold tracking-[1.5px] uppercase mb-4">Beat 275m · Build 300m</p>
+
+            <ul className="text-left mb-4 space-y-2.5 px-1">
+              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug"><span className="text-[18px] flex-none w-6 text-center">👆</span><span>Tap when marker hits <b className="text-successgreen">green</b>.</span></li>
+              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug"><span className="text-[18px] flex-none w-6 text-center">🔥</span><span>Stack perfetti for <b className="text-gold">×8 multiplier</b>. <b>☕ Espresso</b> at 5 perfetti slows meter.</span></li>
+              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug"><span className="text-[18px] flex-none w-6 text-center">🧠</span><span>Mini-rounds between slices. <b className="text-errorred">Fail = −1 ♥</b>.</span></li>
+            </ul>
+
+            {/* Leaderboard preview */}
+            {(board.length > 0 || isGlobal) && (
+              <div className="mb-4 p-2.5 bg-surface2 rounded-[12px] text-left border border-[rgba(74,40,24,0.08)]">
+                <div className="text-[10px] uppercase tracking-[1.3px] text-ink3 font-extrabold mb-1.5 text-center flex items-center justify-center gap-1">
+                  <span>🏆</span><span>{isGlobal ? "Players you'll chase" : 'Best runs'}</span>
+                </div>
+                {loadingGlobal && <div className="text-center text-[11px] text-ink3 py-1 italic">Loading…</div>}
+                {!loadingGlobal && board.length === 0 && (
+                  <div className="text-center text-[11px] text-ink3 py-1 italic">Be the first!</div>
+                )}
+                {!loadingGlobal && board.slice(0, 3).map((entry, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-[12px] py-0.5 px-1">
+                    <span className={`w-4 font-extrabold ${i === 0 ? 'text-gold' : 'text-ink2'}`}>{i + 1}</span>
                     {entry.team === 'GB' && <span>🇬🇧</span>}
                     {entry.team === 'IT' && <span>🇮🇹</span>}
                     <span className="flex-1 font-bold text-ink truncate">{entry.name}</span>
                     <span className="font-extrabold text-ink tabular-nums">{fmt(entry.cm)}m</span>
                   </div>
                 ))}
+                {board.length > 3 && (
+                  <button onClick={() => setShowLeaderboard(true)} className="mt-1.5 text-[10px] text-gold underline w-full text-center font-bold">View all 25 →</button>
+                )}
               </div>
             )}
-            {board.length > 3 && (
-              <button onClick={() => setShowLeaderboard(true)} className="mt-2 text-[10px] text-ink3 underline w-full text-center">View top 25 →</button>
-            )}
-          </div>
+
+            <button onClick={() => onStart(true)} className="block w-full py-3.5 rounded-[12px] text-[14px] font-extrabold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform">
+              Begin
+            </button>
+            <div className="flex justify-center gap-4 pt-1">
+              <button onClick={() => setStep(PROFILE_STEP)} className="text-[10px] text-ink3 underline">← Edit name</button>
+              <button onClick={() => onStart(false)} className="text-[10px] text-ink3 underline">Skip hints</button>
+            </div>
+          </>
         )}
-        {!loadingGlobal && board.length === 0 && isGlobal && (
-          <div className="mb-4 p-3 bg-surface2 rounded-[14px] text-center border border-[rgba(74,40,24,0.08)]">
-            <div className="text-[24px] mb-1">🏆</div>
-            <div className="text-[12px] font-bold text-ink">No scores yet — be the first!</div>
-          </div>
-        )}
-        <button onClick={() => onStart(true)} className="block w-full py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform">
-          Begin (with hint)
-        </button>
-        <button onClick={() => onStart(false)} className="block w-full py-[10px] rounded-[14px] text-xs font-semibold tracking-wide bg-transparent text-ink2 border border-[rgba(74,40,24,0.18)] active:scale-[0.97] transition-transform">
-          Skip — sono italiano
-        </button>
-        <div className="flex justify-center gap-4 pt-2">
-          {(localBoard.length > 0 || isGlobal) && (
-            <button
-              onClick={() => setShowLeaderboard(true)}
-              className="text-[10px] text-ink3 underline hover:text-ink2"
-            >🏆 Leaderboard</button>
-          )}
-          {seenIntro && (
-            <button
-              onClick={() => setStep(0)}
-              className="text-[10px] text-ink3 underline hover:text-ink2"
-            >Watch intro again</button>
-          )}
-        </div>
       </motion.div>
 
       {/* Leaderboard panel */}
