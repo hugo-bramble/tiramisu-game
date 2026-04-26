@@ -100,23 +100,13 @@ const JOKES = {
   },
 };
 
-// Ambient story beats — small overlays that flavor the game between phases
+// Ambient story beats — sparse, sprinkled across the game arc
 const STORY_BEATS = [
-  { at: 200,   text: '📰 Evening Standard: "Tiramisu fever in SW3"' },
-  { at: 800,   text: '👜 Sloane Mum: "Bigger than L\'Eliseo\'s!"' },
   { at: 1500,  text: '📺 Sky News: "Live from Chelsea Town Hall"' },
-  { at: 3000,  text: '🎩 Cadogan Baron: "Where does it end?"' },
   { at: 5000,  text: '🎙️ BBC Radio 4: "Approaching the record…"' },
-  { at: 7500,  text: '📸 Daily Mail: "Miracle in Chelsea"' },
-  { at: 10000, text: '👨‍🍳 Italian Embassy chef: "Mamma mia!"' },
-  { at: 12000, text: '📺 Vogue Italia: "Bellissimo, darling!"' },
-  { at: 15000, text: '🎨 Saatchi curator wants the recipe' },
-  { at: 17500, text: '🇮🇹 Italian Embassy on the line' },
-  { at: 20000, text: '🐎 King\'s Road Ranger: "Stop traffic!"' },
-  { at: 22000, text: '🎖️ Royal Pensioner: "Best night since \'52"' },
-  { at: 24000, text: '📞 Imola: "...this is humiliating"' },
-  { at: 26000, text: '👑 Cadogan Estate: "We\'ll fund the next 25m"' },
-  { at: 28000, text: '🏛️ Mayor of Chelsea is en route' },
+  { at: 12000, text: '📸 Vogue Italia: "Bellissimo, darling!"' },
+  { at: 20000, text: '🐎 King\'s Road traffic stopped' },
+  { at: 26000, text: '🇮🇹 Imola: "...this is humiliating"' },
 ];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -491,6 +481,20 @@ function Game({ hintsOn, onEnd }) {
   // Sync mode to ref
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
+  // Keyboard support: space or enter = tap (for desktop accessibility)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (modeRef.current === 'timing' && !pausedRef.current && runningRef.current) {
+          handleTap();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // Marker animation loop with phase-based modifiers for strategic depth
   useEffect(() => {
     let raf;
@@ -605,12 +609,14 @@ function Game({ hintsOn, onEnd }) {
     // Espresso decrement
     if (espressoActiveRef.current > 0) espressoActiveRef.current -= 1;
 
-    // Check phase transition
+    // Check phase transition — non-interrupting auto-fade banner
     const newPhase = getPhase(newLength);
     if (newPhase.idx !== phaseIdxRef.current) {
       setPhaseIdx(newPhase.idx);
       sfx.phase();
-      pauseFor({ emoji: '⚡', label: 'PHASE ' + (newPhase.idx + 1), title: newPhase.name, sub: newPhase.sub });
+      const phaseMsId = Date.now() + Math.random();
+      setSmallMilestone({ text: `Phase ${newPhase.idx + 1} · ${newPhase.name}`, sub: newPhase.sub, id: phaseMsId });
+      setTimeout(() => setSmallMilestone(m2 => (m2 && m2.id === phaseMsId) ? null : m2), 2800);
     }
 
     // Check ambient story beats
@@ -1339,15 +1345,16 @@ function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
   const [tappedTypes, setTappedTypes] = useState([]); // record of what user tapped
   const [result, setResult] = useState(null);
   const isFirst = roundNum === 0;
-  // Difficulty scales with both round count AND phase (later phases = much harder)
+  // Gentle early difficulty, escalates with phase
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
-    const len = Math.min(4 + roundNum + phaseIdx, 10);
+    // Phase 0: 3, Phase 1: 4, Phase 2: 5, Phase 3: 6, Phase 4: 7+ (harder)
+    const len = Math.min(3 + phaseIdx + Math.floor(roundNum / 3), 9);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
   }, [roundNum, phaseIdx]);
-  // Display speed accelerates aggressively in late phases
-  const showDuration = Math.max(220, 540 - roundNum * 30 - phaseIdx * 50);
-  const gapDuration = Math.max(80, 200 - roundNum * 10 - phaseIdx * 25);
+  // Display speed: slow in early phases, fast in late
+  const showDuration = Math.max(260, 720 - phaseIdx * 90 - roundNum * 20);
+  const gapDuration = Math.max(110, 240 - phaseIdx * 25 - roundNum * 8);
 
   // Intro: play sound on entry, user taps "Watch" to continue
   useEffect(() => {
