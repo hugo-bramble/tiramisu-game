@@ -141,11 +141,13 @@ function saveBest(cm) {
 // Local "leaderboard" — top 10 runs with name + score + date
 function getUsername() { try { return localStorage.getItem('tiramisu_name') || ''; } catch (e) { return ''; } }
 function setUsernameLocal(n) { try { localStorage.setItem('tiramisu_name', String(n).slice(0, 20)); } catch (e) {} }
+function getTeam() { try { return localStorage.getItem('tiramisu_team') || ''; } catch (e) { return ''; } }
+function setTeamLocal(t) { try { localStorage.setItem('tiramisu_team', t); } catch (e) {} }
 function getLeaderboard() { try { return JSON.parse(localStorage.getItem('tiramisu_leaderboard') || '[]'); } catch (e) { return []; } }
-function addToLeaderboard(name, cm) {
+function addToLeaderboard(name, cm, team) {
   try {
     const board = getLeaderboard();
-    board.push({ name: (name || 'Anonymous').slice(0, 20), cm: Math.floor(cm), date: Date.now() });
+    board.push({ name: (name || 'Anonymous').slice(0, 20), cm: Math.floor(cm), date: Date.now(), team: team || '' });
     board.sort((a, b) => b.cm - a.cm);
     localStorage.setItem('tiramisu_leaderboard', JSON.stringify(board.slice(0, 10)));
   } catch (e) {}
@@ -234,6 +236,7 @@ function Welcome({ onStart }) {
   const [step, setStep] = useState(seenIntro ? 99 : 0); // 99 = jump straight to rules
   const personalBest = getBest();
   const [name, setName] = useState(() => getUsername());
+  const [team, setTeamState] = useState(() => getTeam());
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [globalBoard, setGlobalBoard] = useState(null);
   const [loadingGlobal, setLoadingGlobal] = useState(false);
@@ -458,6 +461,27 @@ function Welcome({ onStart }) {
             className="w-full px-3 py-2.5 rounded-[10px] border-2 border-[rgba(74,40,24,0.15)] bg-surface text-[14px] text-ink font-bold text-center focus:outline-none focus:border-gold transition-colors"
           />
           {!name && <div className="text-[10px] text-ink3 mt-1.5 text-center italic">Without a name your scores show as "Anonymous"</div>}
+
+          {/* Team selector */}
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-[1.5px] font-extrabold text-ink3 mb-1.5 text-center">Pick your side</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setTeamState('GB'); setTeamLocal('GB'); }}
+                className={`py-2.5 px-2 rounded-[10px] flex items-center justify-center gap-1.5 text-[12px] font-bold transition-all ${team === 'GB' ? 'bg-cocoa text-mascarpone shadow-[0_4px_14px_rgba(74,40,24,0.3)] scale-105' : 'bg-surface text-ink2 border-2 border-[rgba(74,40,24,0.12)] hover:border-cocoa'}`}
+              >
+                <span className="text-[18px]">🇬🇧</span><span>British</span>
+              </button>
+              <button
+                onClick={() => { setTeamState('IT'); setTeamLocal('IT'); }}
+                className={`py-2.5 px-2 rounded-[10px] flex items-center justify-center gap-1.5 text-[12px] font-bold transition-all ${team === 'IT' ? 'bg-cocoa text-mascarpone shadow-[0_4px_14px_rgba(74,40,24,0.3)] scale-105' : 'bg-surface text-ink2 border-2 border-[rgba(74,40,24,0.12)] hover:border-cocoa'}`}
+              >
+                <span className="text-[18px]">🇮🇹</span><span>Italian</span>
+              </button>
+            </div>
+            {team === 'GB' && <div className="text-[10px] text-ink3 mt-1.5 text-center italic">"Brilliant attempt, old chap" 🇬🇧</div>}
+            {team === 'IT' && <div className="text-[10px] text-ink3 mt-1.5 text-center italic">"Sangue italiano! Forza!" 🇮🇹</div>}
+          </div>
         </div>
 
         <ul className="text-left mb-5 space-y-3">
@@ -519,7 +543,11 @@ function Welcome({ onStart }) {
                 {!loadingGlobal && board.map((entry, i) => (
                   <div key={i} className="flex items-center gap-3 py-2 px-3 rounded-[10px] bg-surface2">
                     <div className={`w-6 text-[14px] font-extrabold ${i === 0 ? 'text-gold' : i < 3 ? 'text-ink' : 'text-ink3'}`}>{i + 1}</div>
-                    <div className="flex-1 text-[13px] font-bold text-ink truncate">{entry.name}</div>
+                    <div className="flex-1 text-[13px] font-bold text-ink truncate flex items-center gap-1.5">
+                      {entry.team === 'GB' && <span>🇬🇧</span>}
+                      {entry.team === 'IT' && <span>🇮🇹</span>}
+                      <span className="truncate">{entry.name}</span>
+                    </div>
                     <div className="text-[14px] font-extrabold text-ink tabular-nums">{fmt(entry.cm)}m</div>
                   </div>
                 ))}
@@ -1386,10 +1414,10 @@ function GameOver({ stats, onRestart, onHome }) {
     setIsNew(wasNew);
     setBest(getBest());
     // Add to local leaderboard
-    addToLeaderboard(getUsername(), stats.length);
+    addToLeaderboard(getUsername(), stats.length, getTeam());
     // Also post to global if configured
     if (isGlobalLeaderboardConfigured() && stats.length > 100) {
-      postScore(getUsername() || 'Anonymous', stats.length);
+      postScore(getUsername() || 'Anonymous', stats.length, getTeam());
     }
   }, [stats.length]);
 

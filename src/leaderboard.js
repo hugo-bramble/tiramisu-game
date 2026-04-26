@@ -42,22 +42,25 @@ export async function fetchGlobalLeaderboard(limit = 25) {
         name: d.document.fields?.name?.stringValue || 'Anonymous',
         cm: parseInt(d.document.fields?.cm?.integerValue || '0', 10),
         date: parseInt(d.document.fields?.date?.integerValue || '0', 10),
+        team: d.document.fields?.team?.stringValue || '',
       }));
   } catch (e) {
     return null;
   }
 }
 
-export async function postScore(name, cm) {
+export async function postScore(name, cm, team = '') {
   if (!isConfigured()) return false;
   try {
     const safeName = String(name || 'Anonymous').slice(0, 20);
     const safeCm = Math.max(0, Math.min(1000000, Math.floor(cm)));
+    const safeTeam = ['GB', 'IT'].includes(team) ? team : '';
     const body = {
       fields: {
         name: { stringValue: safeName },
         cm: { integerValue: String(safeCm) },
         date: { integerValue: String(Date.now()) },
+        team: { stringValue: safeTeam },
       },
     };
     const res = await fetch(baseUrl(), {
