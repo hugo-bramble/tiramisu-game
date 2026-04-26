@@ -553,7 +553,7 @@ function Game({ hintsOn, onEnd }) {
   }, []);
 
   const handleTap = useCallback(() => {
-    if (!runningRef.current || pausedRef.current) return;
+    if (!runningRef.current || pausedRef.current || modeRef.current !== 'timing') return;
     sfx.tap();
     const quality = computeQuality();
     const type = RECIPE[layerIdxRef.current];
@@ -824,7 +824,7 @@ function Game({ hintsOn, onEnd }) {
         </div>
 
         {/* Phase label */}
-        <div className="absolute top-[60px] left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-[2.2px] font-bold text-ink3 z-[6] flex items-center gap-2">
+        <div className="absolute top-[78px] left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-[2.2px] font-bold text-ink3 z-[6] flex items-center gap-2 whitespace-nowrap">
           <span>Phase {phaseIdx + 1}</span>
           <span className="text-gold">{phase.name}</span>
           <span className="text-ink3 opacity-50">·</span>
@@ -832,7 +832,7 @@ function Game({ hintsOn, onEnd }) {
         </div>
 
         {/* Ambient story beats — press-ticker style */}
-        <div className="absolute top-[148px] left-0 right-0 flex justify-center pointer-events-none z-[8] px-4">
+        <div className="absolute top-[156px] left-0 right-0 flex justify-center pointer-events-none z-[8] px-4">
           <AnimatePresence>
             {activeBeat && (
               <motion.div
@@ -850,7 +850,7 @@ function Game({ hintsOn, onEnd }) {
         </div>
 
         {/* Toast — wrapper handles centering, motion handles animation */}
-        <div className="absolute top-[92px] left-0 right-0 flex justify-center pointer-events-none z-20 px-4">
+        <div className="absolute top-[110px] left-0 right-0 flex justify-center pointer-events-none z-20 px-4">
           <AnimatePresence>
             {toast && (
               <motion.div
