@@ -1237,6 +1237,7 @@ function GameOver({ stats, onRestart, onHome }) {
   const m = stats.length / 100;
   const isNew = saveBest(stats.length);
   const best = getBest();
+  const [iapStage, setIapStage] = useState('offer'); // offer | processing | rugpull
 
   let title = 'Servizio finito', verdict = '', closingScene = '', stars = 0;
   if (m < 30) {
@@ -1325,6 +1326,53 @@ function GameOver({ stats, onRestart, onHome }) {
 
       <p className="text-[14px] text-center text-ink2 leading-snug max-w-[340px] font-medium px-2 mt-1">{verdict}</p>
       <p className="text-[12px] text-center text-gold italic font-bold leading-snug max-w-[320px] px-2 mt-1">{closingScene}</p>
+
+      {/* The £10 IAP joke */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, type: 'spring', stiffness: 280, damping: 22 }}
+        className="bg-surface2 rounded-[14px] p-3 border border-[rgba(74,40,24,0.12)] max-w-[340px] w-full mt-3 text-left"
+      >
+        {iapStage === 'offer' && (
+          <>
+            <div className="text-[10px] uppercase tracking-wider text-ink3 font-bold mb-1">Continue your run?</div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1">
+                <div className="text-[14px] font-extrabold text-ink leading-tight">Buy 1 extra ♥</div>
+                <div className="text-[11px] text-ink2 mt-0.5">Transfer £10 to Hugo via Monzo</div>
+              </div>
+              <button
+                onClick={() => { setIapStage('processing'); setTimeout(() => setIapStage('rugpull'), 1800); }}
+                className="px-3 py-2 bg-cocoa text-mascarpone rounded-[10px] text-[11px] font-extrabold tracking-wide whitespace-nowrap active:scale-[0.95] transition-transform"
+              >
+                £10 · Pay
+              </button>
+            </div>
+          </>
+        )}
+        {iapStage === 'processing' && (
+          <div className="flex items-center gap-3 py-1">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              className="text-[20px]"
+            >⏳</motion.div>
+            <div className="flex-1">
+              <div className="text-[12px] font-bold text-ink">Processing transfer…</div>
+              <div className="text-[10px] text-ink2 mt-0.5">Connecting to Monzo</div>
+            </div>
+          </div>
+        )}
+        {iapStage === 'rugpull' && (
+          <div className="text-center py-1">
+            <div className="text-[28px] leading-none mb-1">😏</div>
+            <div className="text-[13px] font-extrabold text-ink">Just kidding!</div>
+            <div className="text-[11px] text-ink2 mt-1 italic">No microtransactions at Chelsea Town Hall. Riprova free, caro.</div>
+          </div>
+        )}
+      </motion.div>
+
       <button onClick={onRestart} className="px-9 py-[13px] rounded-[14px] text-sm font-bold bg-cocoa text-mascarpone active:scale-[0.97] transition-transform mt-3">
         Play again
       </button>
@@ -1912,11 +1960,11 @@ function OrderRound({ roundNum, phaseIdx = 0, onComplete }) {
   const customer = useMemo(() => CUSTOMERS[roundNum % CUSTOMERS.length], [roundNum]);
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
-    const len = Math.min(3 + phaseIdx + Math.floor(roundNum / 3), 8);
+    const len = Math.min(3 + phaseIdx + Math.floor(roundNum / 3), 7);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
   }, [roundNum, phaseIdx]);
-  // Reveal duration: generous in early game (5s), tight late game (2.2s)
-  const revealMs = Math.max(2200, 5500 - phaseIdx * 700);
+  // Reveal duration: very generous early game (5.5s), still fair late game (3s)
+  const revealMs = Math.max(3000, 6500 - phaseIdx * 800);
 
   useEffect(() => {
     if (phase === 'intro') sfx.phase();
