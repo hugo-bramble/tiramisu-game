@@ -444,16 +444,20 @@ function Welcome({ onStart }) {
           </div>
         )}
 
-        {/* Username input */}
-        <div className="mb-4">
+        {/* Username input — prominent for leaderboard */}
+        <div className="mb-4 bg-surface2 rounded-[14px] p-3 border border-[rgba(74,40,24,0.12)]">
+          <div className="text-[10px] uppercase tracking-[1.5px] font-extrabold text-gold mb-1.5 flex items-center justify-center gap-1">
+            <span>🏆</span><span>Leaderboard name</span>
+          </div>
           <input
             type="text"
             value={name}
             onChange={(e) => { setName(e.target.value); setUsernameLocal(e.target.value); }}
-            placeholder="Your name (for the leaderboard)"
+            placeholder="Type your name…"
             maxLength={20}
-            className="w-full px-3 py-2 rounded-[10px] border border-[rgba(74,40,24,0.18)] bg-surface2 text-[13px] text-ink font-semibold text-center focus:outline-none focus:border-gold"
+            className="w-full px-3 py-2.5 rounded-[10px] border-2 border-[rgba(74,40,24,0.15)] bg-surface text-[14px] text-ink font-bold text-center focus:outline-none focus:border-gold transition-colors"
           />
+          {!name && <div className="text-[10px] text-ink3 mt-1.5 text-center italic">Without a name your scores show as "Anonymous"</div>}
         </div>
 
         <ul className="text-left mb-5 space-y-3">
