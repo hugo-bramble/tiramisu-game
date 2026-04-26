@@ -242,16 +242,16 @@ function Welcome({ onStart }) {
   const [loadingGlobal, setLoadingGlobal] = useState(false);
   const localBoard = getLeaderboard();
 
-  // Fetch global when leaderboard panel opens
+  // Fetch global on mount so we can preview top players inline
   useEffect(() => {
-    if (showLeaderboard && isGlobalLeaderboardConfigured() && !globalBoard) {
+    if (isGlobalLeaderboardConfigured() && !globalBoard) {
       setLoadingGlobal(true);
       fetchGlobalLeaderboard(25).then(b => {
         setGlobalBoard(b || []);
         setLoadingGlobal(false);
       });
     }
-  }, [showLeaderboard, globalBoard]);
+  }, [globalBoard]);
 
   const isGlobal = isGlobalLeaderboardConfigured();
   const board = isGlobal && globalBoard ? globalBoard : localBoard;
@@ -484,12 +484,45 @@ function Welcome({ onStart }) {
           </div>
         </div>
 
-        <ul className="text-left mb-5 space-y-3">
+        <ul className="text-left mb-4 space-y-3">
           <HowItem icon="👆">Tap when the marker hits <b className="text-successgreen">green</b> for perfetto.</HowItem>
           <HowItem icon="🔥">Stack perfetti to grow your <b className="text-gold">×8 multiplier</b>. A miss resets it.</HowItem>
           <HowItem icon="☕">Every 5 perfetti earns an <b className="text-gold">espresso</b>. Tap it to slow the meter for 4 layers — save it for late game.</HowItem>
           <HowItem icon="🧠">Mini-rounds (memory · customer order) appear between slices. <b className="text-errorred">Fail = −1 heart.</b></HowItem>
+          <HowItem icon="🏆">Beat other players on the <b className="text-gold">global leaderboard</b>. Pass them mid-run for celebration.</HowItem>
         </ul>
+
+        {/* Inline leaderboard preview — top 3 */}
+        {board.length > 0 && (
+          <div className="mb-4 p-3 bg-surface2 rounded-[14px] text-left border border-[rgba(74,40,24,0.08)]">
+            <div className="text-[10px] uppercase tracking-[1.5px] text-ink3 font-extrabold mb-2 flex items-center gap-1.5 justify-center">
+              <span>🏆</span><span>{isGlobal ? 'Top players globally' : 'Best runs (this device)'}</span>
+            </div>
+            {loadingGlobal && <div className="text-center text-[11px] text-ink3 py-2 italic">Loading…</div>}
+            {!loadingGlobal && (
+              <div className="space-y-1">
+                {board.slice(0, 3).map((entry, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[12px] py-1 px-2 rounded-md bg-surface">
+                    <span className={`w-4 font-extrabold ${i === 0 ? 'text-gold' : i === 1 ? 'text-ink' : 'text-ink2'}`}>{i + 1}</span>
+                    {entry.team === 'GB' && <span>🇬🇧</span>}
+                    {entry.team === 'IT' && <span>🇮🇹</span>}
+                    <span className="flex-1 font-bold text-ink truncate">{entry.name}</span>
+                    <span className="font-extrabold text-ink tabular-nums">{fmt(entry.cm)}m</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {board.length > 3 && (
+              <button onClick={() => setShowLeaderboard(true)} className="mt-2 text-[10px] text-ink3 underline w-full text-center">View top 25 →</button>
+            )}
+          </div>
+        )}
+        {!loadingGlobal && board.length === 0 && isGlobal && (
+          <div className="mb-4 p-3 bg-surface2 rounded-[14px] text-center border border-[rgba(74,40,24,0.08)]">
+            <div className="text-[24px] mb-1">🏆</div>
+            <div className="text-[12px] font-bold text-ink">No scores yet — be the first!</div>
+          </div>
+        )}
         <button onClick={() => onStart(true)} className="block w-full py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform">
           Begin (with hint)
         </button>
@@ -598,6 +631,10 @@ function Game({ hintsOn, onEnd }) {
   const [activeBeat, setActiveBeat] = useState(null);
   // Aggregate stats for end-game display
   const statsRef = useRef({ perfects: 0, maxCombo: 0, slices: 0, goldenSlices: 0, miniGamesWon: 0, miniGamesLost: 0 });
+  // Leaderboard: fetched at game start, used for "chasing" + "passed" celebrations
+  const leaderboardTargetsRef = useRef([]); // sorted array of { name, cm, team } we haven't passed yet
+  const [chasingTarget, setChasingTarget] = useState(null); // current next target
+  const seenEspressoRef = useRef(false); // first-time espresso explainer flag
   const [mode, setMode] = useState('timing'); // 'timing' | 'memory' | 'order' | 'lightning'
   const [memoryRoundCount, setMemoryRoundCount] = useState(0);
   const [orderRoundCount, setOrderRoundCount] = useState(0);
@@ -634,6 +671,28 @@ function Game({ hintsOn, onEnd }) {
 
   // Sync mode to ref
   useEffect(() => { modeRef.current = mode; }, [mode]);
+
+  // Fetch leaderboard at game start so we know who to chase
+  useEffect(() => {
+    let cancelled = false;
+    if (isGlobalLeaderboardConfigured()) {
+      fetchGlobalLeaderboard(15).then(b => {
+        if (cancelled || !b || !b.length) return;
+        // Sort ascending so we pop targets as we pass them
+        const sorted = [...b].sort((a, b) => a.cm - b.cm);
+        leaderboardTargetsRef.current = sorted;
+        // Set first target = lowest score on board (smallest mountain to climb)
+        const first = sorted[0];
+        if (first) {
+          setChasingTarget(first);
+          // Show "Top score: X" banner briefly so player knows the bar
+          const top = sorted[sorted.length - 1];
+          showToast(`🏆 Top: ${top.name} · ${fmt(top.cm)}m`, 'gold', 3500);
+        }
+      });
+    }
+    return () => { cancelled = true; };
+  }, []);
 
   // Keyboard support: space or enter = tap (for desktop accessibility)
   useEffect(() => {
@@ -751,7 +810,13 @@ function Game({ hintsOn, onEnd }) {
       if (newCombo > 0 && newCombo % 5 === 0) {
         sfx.espresso();
         setEspresso(e => e + 1);
-        showToast('☕ Espresso earned!', 'gold', 2400);
+        // First-time explainer: clearer message about what to do with it
+        if (!seenEspressoRef.current) {
+          seenEspressoRef.current = true;
+          showToast('☕ Espresso earned! Tap the cup → to slow the meter', 'gold', 4500);
+        } else {
+          showToast('☕ Espresso earned!', 'gold', 2400);
+        }
       }
     } else {
       sfx.good();
@@ -780,6 +845,16 @@ function Game({ hintsOn, onEnd }) {
         setActiveBeat(beat);
         setTimeout(() => setActiveBeat(b => (b === beatRef ? null : b)), 3500);
       }
+    }
+
+    // Check leaderboard overtakes — celebrate passing other players
+    while (leaderboardTargetsRef.current.length > 0 && newLength >= leaderboardTargetsRef.current[0].cm) {
+      const passed = leaderboardTargetsRef.current.shift();
+      const flag = passed.team === 'GB' ? '🇬🇧 ' : passed.team === 'IT' ? '🇮🇹 ' : '';
+      showToast(`📈 Passed ${flag}${passed.name}!`, 'goldenslice', 2800);
+      sfx.multUp(2);
+      // Update chasing target to next
+      setChasingTarget(leaderboardTargetsRef.current[0] || null);
     }
 
     // Check milestones
