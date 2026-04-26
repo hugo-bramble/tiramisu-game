@@ -212,8 +212,15 @@ function FlagStripe() {
 
 // ─── WELCOME ─────────────────────────────────────────────────────────────────
 function Welcome({ onStart }) {
-  const [step, setStep] = useState(0);
-  const next = () => setStep(s => s + 1);
+  // Skip cinematic if user has seen it before
+  const seenIntro = (() => { try { return localStorage.getItem('tiramisu_seen_intro') === '1'; } catch (e) { return false; } })();
+  const [step, setStep] = useState(seenIntro ? 99 : 0); // 99 = jump straight to rules
+  const next = () => setStep(s => {
+    const ns = s + 1;
+    // Mark intro as seen when user reaches the rules card
+    if (ns >= 5) { try { localStorage.setItem('tiramisu_seen_intro', '1'); } catch (e) {} }
+    return ns;
+  });
 
   // Cinematic intro scenes
   const SCENES = [
@@ -406,6 +413,12 @@ function Welcome({ onStart }) {
         <button onClick={() => onStart(false)} className="block w-full py-[10px] rounded-[14px] text-xs font-semibold tracking-wide bg-transparent text-ink2 border border-[rgba(74,40,24,0.18)] active:scale-[0.97] transition-transform">
           Skip — sono italiano
         </button>
+        {seenIntro && (
+          <button
+            onClick={() => setStep(0)}
+            className="block w-full pt-2 text-[10px] text-ink3 underline hover:text-ink2"
+          >Watch intro again</button>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -609,14 +622,12 @@ function Game({ hintsOn, onEnd }) {
     // Espresso decrement
     if (espressoActiveRef.current > 0) espressoActiveRef.current -= 1;
 
-    // Check phase transition — non-interrupting auto-fade banner
+    // Check phase transition — non-interrupting toast
     const newPhase = getPhase(newLength);
     if (newPhase.idx !== phaseIdxRef.current) {
       setPhaseIdx(newPhase.idx);
       sfx.phase();
-      const phaseMsId = Date.now() + Math.random();
-      setSmallMilestone({ text: `Phase ${newPhase.idx + 1} · ${newPhase.name}`, sub: newPhase.sub, id: phaseMsId });
-      setTimeout(() => setSmallMilestone(m2 => (m2 && m2.id === phaseMsId) ? null : m2), 2800);
+      showToast(`⚡ Phase ${newPhase.idx + 1} · ${newPhase.name}`, 'gold', 2400);
     }
 
     // Check ambient story beats
