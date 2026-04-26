@@ -11,11 +11,11 @@ const POINTS = { perfect: 40, good: 18, bad: 0 };
 const GOAL_CM = 30000;
 
 const PHASES = [
-  { name: 'Apprentice', threshold: 0,     speed: 0.6,  green: 36, sub: 'Wide green zone, slow meter — get the timing' },
-  { name: 'Pasticcere', threshold: 800,   speed: 1.0,  green: 27, sub: 'The meter speeds up. Stay sharp.' },
-  { name: 'Maestro',    threshold: 3000,  speed: 1.4,  green: 20, sub: 'Faster, tighter — perfetti now matter more' },
-  { name: 'Virtuoso',   threshold: 9000,  speed: 1.85, green: 15, sub: 'Punishing pace. Save your espresso!' },
-  { name: 'Leggenda',   threshold: 20000, speed: 2.4,  green: 11, sub: 'Mastery only. Chelsea holds its breath.' },
+  { name: 'Apprentice', threshold: 0,     speed: 0.6,  green: 36, time: '5pm', bg: 'phase-1', sub: '5pm · The crowd is small but eager. Show them what you can do.' },
+  { name: 'Pasticcere', threshold: 800,   speed: 1.0,  green: 27, time: '6pm', bg: 'phase-2', sub: '6pm · The press arrive. Cameras flash on Cadogan Pier.' },
+  { name: 'Maestro',    threshold: 3000,  speed: 1.4,  green: 20, time: '7pm', bg: 'phase-3', sub: "7pm · Sloane Square is heaving. King's Road traffic stopped." },
+  { name: 'Virtuoso',   threshold: 9000,  speed: 1.85, green: 15, time: '8pm', bg: 'phase-4', sub: '8pm · The Italian Embassy is on the line. Vogue Italia just arrived.' },
+  { name: 'Leggenda',   threshold: 20000, speed: 2.4,  green: 11, time: '9pm', bg: 'phase-5', sub: '9pm · Silence. Only your hands move. The world watches.' },
 ];
 
 const MILESTONES = [
@@ -37,6 +37,14 @@ const JOKES = {
     'The pensioners gasp in horror',
     'Peter Jones returns it',
     "Worse than King's Road traffic",
+    'Sloane mum tuts loudly',
+    'A disaster, darling',
+    "That's not Bluebird-tier",
+    'The Saatchi wouldn\'t hang it',
+    'Fulham would still take it',
+    'Madonna santa, riprova!',
+    'Imola laughs from afar',
+    "Like a Sloane Square parking ticket",
   ],
   slice: [
     'Una fetta perfetta!',
@@ -47,6 +55,14 @@ const JOKES = {
     'Buonissimo, old bean',
     'Cadogan estate impressed',
     'Posher than Granger & Co',
+    'Squisito, chef!',
+    'The Royal Hospital cheers',
+    "Better than L'Eliseo's",
+    'A slice for the ages',
+    "World's End is buzzing",
+    'Eataly approves',
+    "The Daily Mail can't fault it",
+    'Even the Italian Embassy calls',
   ],
   golden: [
     '🌟 Vogue Italia approves!',
@@ -54,14 +70,30 @@ const JOKES = {
     '🌟 Saatchi takes a photo!',
     '🌟 Eataly wants the recipe!',
     '🌟 King Charles applauds!',
+    '🌟 La Repubblica calls!',
+    "🌟 The Pope's blessing arrives",
+    '🌟 Chelsea Pensioners salute',
+    '🌟 The Mayor declares a holiday',
+    '🌟 Stamford Bridge erupts',
+    '🌟 Roma weeps with envy',
   ],
   multUp: {
-    2: ['×2 — On a roll!', '×2 multiplier!'],
-    3: ['×3 — Magnifico!', '×3 — Sloane Square impressed'],
-    5: ['×5 — Bellissimo combo!', '×5 — Saatchi takes notes'],
-    8: ['×8 LEGGENDARIO!', '×8 — Vogue is calling!'],
+    2: ['×2 — On a roll!', '×2 multiplier!', '×2 — Sloane Square notices', '×2 — Just warming up'],
+    3: ['×3 — Magnifico!', '×3 — Cadogan applauds', '×3 — Saatchi takes notes', '×3 — Sky News on the line'],
+    5: ['×5 — Bellissimo combo!', '×5 — Vogue Italia is here', '×5 — Eataly wants in', "×5 — King's Rd is yours"],
+    8: ['×8 LEGGENDARIO!', '×8 — Vogue is calling!', '×8 — Roma is jealous', '×8 — The Pope is watching'],
   },
 };
+
+// Ambient story beats — small overlays that flavor the game between phases
+const STORY_BEATS = [
+  { at: 200,  text: '📰 Evening Standard: "Tiramisu fever in SW3"' },
+  { at: 1500, text: '📺 Sky News cuts in: "Live from Chelsea Town Hall"' },
+  { at: 5000, text: '🎙️ BBC Radio 4: "They\'re approaching the record..."' },
+  { at: 12000, text: '📸 Vogue Italia: "Bellissimo, signor/signora!"' },
+  { at: 17000, text: '🇮🇹 Italian Embassy on the line' },
+  { at: 24000, text: '📞 Imola is watching. Nervously.' },
+];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -153,29 +185,48 @@ function Welcome({ onStart }) {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="absolute inset-0 z-50 flex items-center justify-center p-5 bg-[rgba(31,17,8,0.45)] backdrop-blur-md"
+      className="absolute inset-0 z-50 flex items-center justify-center p-5 bg-[radial-gradient(ellipse_at_50%_30%,#3a2a4e_0%,#1a1638_75%)] backdrop-blur-xl overflow-hidden"
     >
+      {/* Stars */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage:
+          'radial-gradient(circle at 12% 18%, rgba(255,255,255,0.55) 1px, transparent 2px),' +
+          'radial-gradient(circle at 78% 12%, rgba(255,255,255,0.4) 1px, transparent 2px),' +
+          'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.5) 0.8px, transparent 2px),' +
+          'radial-gradient(circle at 92% 84%, rgba(255,255,255,0.35) 0.8px, transparent 2px),' +
+          'radial-gradient(circle at 18% 64%, rgba(255,255,255,0.4) 0.8px, transparent 2px),' +
+          'radial-gradient(circle at 58% 92%, rgba(255,255,255,0.5) 0.8px, transparent 2px)',
+      }} />
+
       <motion.div
-        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        initial={{ scale: 0.92, opacity: 0, y: 14 }} animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-        className="bg-surface border border-[rgba(74,40,24,0.1)] rounded-[26px] p-8 pb-5 text-center max-w-sm w-full shadow-large"
+        className="relative bg-surface border border-[rgba(74,40,24,0.1)] rounded-[28px] p-7 pb-5 text-center max-w-sm w-full shadow-large"
       >
-        <div className="text-5xl mb-1">🍰</div>
-        <h2 className="text-3xl font-extrabold text-ink tracking-tight mb-1">Chelsea Tiramisu</h2>
-        <div className="text-[11px] text-gold font-bold tracking-widest uppercase mb-4">Chelsea Town Hall · Live</div>
-        <p className="text-[14px] text-ink leading-relaxed mb-5 px-1">
-          You're at <b className="text-gold font-bold">Chelsea Town Hall</b>. Build a <b className="text-gold font-bold">300m tiramisu</b> and break the 275m world record.
+        <motion.div
+          initial={{ rotate: -10, scale: 0 }}
+          animate={{ rotate: 0, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 250, damping: 14, delay: 0.1 }}
+          className="text-[56px] mb-1 leading-none"
+        >🍰</motion.div>
+        <h2 className="text-[30px] font-black text-ink tracking-tight mb-1 leading-none">Chelsea Tiramisu</h2>
+        <div className="text-[11px] text-gold font-extrabold tracking-[2px] uppercase mb-4">A World Record Attempt</div>
+
+        <p className="text-[14px] text-ink leading-relaxed mb-5 px-1 italic">
+          Tonight, at <b className="not-italic text-gold font-bold">Chelsea Town Hall</b>, you'll attempt the impossible: a <b className="not-italic text-gold font-bold">300-metre tiramisu</b>. The current record is 275m. Cameras roll. The world watches.
         </p>
+
         <ul className="text-left mb-5 space-y-3">
-          <HowItem icon="👆">One button. <b className="text-gold">Tap when the marker hits green</b> for perfetto.</HowItem>
-          <HowItem icon="🔥">Stack perfetti to build a <b className="text-gold">×8 multiplier</b>. One miss resets it.</HowItem>
-          <HowItem icon="📈">Five phases get harder fast: <b className="text-gold">Apprentice → Leggenda</b>.</HowItem>
+          <HowItem icon="👆">Tap when the marker hits <b className="text-successgreen">green</b> for perfetto.</HowItem>
+          <HowItem icon="🔥">Stack perfetti to grow your <b className="text-gold">×8 multiplier</b>. One miss resets it.</HowItem>
+          <HowItem icon="🧠">Bonus rounds (memory · customer order) appear between slices.</HowItem>
+          <HowItem icon="🏆">Beat 275m to break the record. Push for 300m for glory.</HowItem>
         </ul>
-        <button onClick={() => onStart(true)} className="block w-full py-[14px] rounded-[14px] text-sm font-bold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform">
+        <button onClick={() => onStart(true)} className="block w-full py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform">
           Show me how
         </button>
         <button onClick={() => onStart(false)} className="block w-full py-[10px] rounded-[14px] text-xs font-semibold tracking-wide bg-transparent text-ink2 border border-[rgba(74,40,24,0.18)] active:scale-[0.97] transition-transform">
-          Skip — let's go
+          Skip — sono italiano
         </button>
       </motion.div>
     </motion.div>
@@ -211,6 +262,8 @@ function Game({ hintsOn, onEnd }) {
   const [garnishes, setGarnishes] = useState([]);
   const [milestonesShown] = useState(() => new Set());
   const [builderAnim, setBuilderAnim] = useState(null); // 'complete' | 'golden' | null
+  const [storyBeatsShown] = useState(() => new Set());
+  const [activeBeat, setActiveBeat] = useState(null);
   const [mode, setMode] = useState('timing'); // 'timing' | 'memory' | 'order'
   const [memoryRoundCount, setMemoryRoundCount] = useState(0);
   const [orderRoundCount, setOrderRoundCount] = useState(0);
@@ -352,6 +405,16 @@ function Game({ hintsOn, onEnd }) {
       setPhaseIdx(newPhase.idx);
       sfx.phase();
       pauseFor({ emoji: '⚡', label: 'PHASE ' + (newPhase.idx + 1), title: newPhase.name, sub: newPhase.sub });
+    }
+
+    // Check ambient story beats
+    for (const beat of STORY_BEATS) {
+      if (newLength >= beat.at && !storyBeatsShown.has(beat.at)) {
+        storyBeatsShown.add(beat.at);
+        const beatRef = beat;
+        setActiveBeat(beat);
+        setTimeout(() => setActiveBeat(b => (b === beatRef ? null : b)), 3500);
+      }
     }
 
     // Check milestones
@@ -497,7 +560,7 @@ function Game({ hintsOn, onEnd }) {
       </header>
 
       {/* Stage */}
-      <div className="flex-1 relative overflow-hidden bg-[radial-gradient(ellipse_at_50%_35%,#fff8e7_0%,#fdf6e8_80%)]">
+      <div className={`flex-1 relative overflow-hidden bg-${phase.bg}`}>
         {/* Flash on miss */}
         <AnimatePresence>
           {flash > 0 && <motion.div key={'fl-' + flash} initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 0.5 }} className="flash-red" />}
@@ -523,8 +586,29 @@ function Game({ hintsOn, onEnd }) {
         </div>
 
         {/* Phase label */}
-        <div className="absolute top-[60px] left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-[2.2px] font-bold text-ink3 z-[6]">
-          Phase {phaseIdx + 1} <span className="text-gold ml-1">{phase.name}</span>
+        <div className="absolute top-[60px] left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-[2.2px] font-bold text-ink3 z-[6] flex items-center gap-2">
+          <span>Phase {phaseIdx + 1}</span>
+          <span className="text-gold">{phase.name}</span>
+          <span className="text-ink3 opacity-50">·</span>
+          <span className="text-ink2">{phase.time}</span>
+        </div>
+
+        {/* Ambient story beats — press-ticker style */}
+        <div className="absolute top-[148px] left-0 right-0 flex justify-center pointer-events-none z-[8] px-4">
+          <AnimatePresence>
+            {activeBeat && (
+              <motion.div
+                key={activeBeat.at}
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+                className="bg-surface text-ink text-[12px] font-semibold px-4 py-2 rounded-full border border-[rgba(74,40,24,0.1)] shadow-soft max-w-full whitespace-nowrap overflow-hidden text-ellipsis text-center"
+              >
+                {activeBeat.text}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Toast — wrapper handles centering, motion handles animation */}
@@ -939,21 +1023,26 @@ const MEMORY_FAIL = [
 ];
 
 function MemoryRound({ roundNum, onComplete }) {
-  const [phase, setPhase] = useState('intro'); // intro | showing | input | result
+  const [phase, setPhase] = useState('intro'); // intro | preview | showing | prompt | input | result
   const [showIdx, setShowIdx] = useState(-1);
   const [inputIdx, setInputIdx] = useState(0);
   const [result, setResult] = useState(null);
+  const isFirst = roundNum === 0;
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
     const len = Math.min(3 + Math.floor(roundNum / 2), 6);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
   }, [roundNum]);
 
-  // Intro → Showing
+  // Intro: play sound on entry, user taps "Watch" to continue
   useEffect(() => {
-    if (phase !== 'intro') return;
-    sfx.phase();
-    const t = setTimeout(() => setPhase('showing'), 1500);
+    if (phase === 'intro') sfx.phase();
+  }, [phase]);
+
+  // Pre-show beat then start sequence
+  useEffect(() => {
+    if (phase !== 'preview') return;
+    const t = setTimeout(() => setPhase('showing'), 800);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -966,7 +1055,7 @@ function MemoryRound({ roundNum, onComplete }) {
       if (!alive) return;
       if (i >= sequence.length) {
         setShowIdx(-1);
-        setTimeout(() => alive && setPhase('input'), 350);
+        setTimeout(() => alive && setPhase('prompt'), 350);
         return;
       }
       setShowIdx(i);
@@ -976,11 +1065,18 @@ function MemoryRound({ roundNum, onComplete }) {
         if (!alive) return;
         setShowIdx(-1);
         setTimeout(tick, 220);
-      }, 580);
+      }, 600);
     };
-    setTimeout(tick, 450);
+    setTimeout(tick, 400);
     return () => { alive = false; };
   }, [phase, sequence]);
+
+  // Prompt → input after brief beat
+  useEffect(() => {
+    if (phase !== 'prompt') return;
+    const t = setTimeout(() => setPhase('input'), 1100);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   const handleTap = useCallback((type) => {
     if (phase !== 'input') return;
@@ -1015,29 +1111,68 @@ function MemoryRound({ roundNum, onComplete }) {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
               className="flex-1 flex flex-col items-center justify-center text-center"
             >
-              <div className="text-[80px] mb-3 leading-none pulse-emoji">🧠</div>
-              <div className="text-[11px] uppercase tracking-[2px] font-extrabold text-gold mb-2">Round Event</div>
+              <motion.div
+                animate={{ y: [0, -6, 0], rotate: [-3, 3, -3] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-[88px] mb-3 leading-none"
+              >🧠</motion.div>
+              <div className="text-[11px] uppercase tracking-[2px] font-extrabold text-gold mb-2">{isFirst ? 'Mini-game · New!' : 'Round Event'}</div>
               <h2 className="text-[34px] font-black text-ink tracking-tight mb-3 leading-tight">Nonna's Memory</h2>
-              <p className="text-[15px] text-ink2 max-w-[280px] leading-relaxed">Watch the sequence, then repeat it. <b className="text-gold">Bonus length on success.</b></p>
+              <p className="text-[15px] text-ink2 max-w-[300px] leading-relaxed mb-2 px-1">
+                {isFirst
+                  ? "Nonna will show you a pattern of ingredients. Watch carefully, then repeat it in the same order."
+                  : "Watch the pattern, then repeat it in order."}
+              </p>
+              <p className="text-[12px] text-ink3 max-w-[280px] leading-relaxed mb-7 px-2">
+                <b className="text-gold">Bonus length</b> on success · No penalty if you miss
+              </p>
+              <motion.button
+                initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 280 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setPhase('preview')}
+                onTouchStart={(e) => { e.preventDefault(); setPhase('preview'); }}
+                className="px-9 py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider bg-cocoa text-mascarpone shadow-large active:scale-[0.97] transition-transform"
+              >
+                Watch the pattern →
+              </motion.button>
             </motion.div>
           )}
 
-          {(phase === 'showing' || phase === 'input') && (
+          {phase === 'preview' && (
+            <motion.div
+              key="preview"
+              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <div className="text-[40px] mb-3 leading-none">👀</div>
+              <h2 className="text-[28px] font-black text-ink tracking-tight">Watch carefully…</h2>
+              <p className="text-[13px] text-ink2 mt-2">{sequence.length} ingredient{sequence.length !== 1 ? 's' : ''}</p>
+            </motion.div>
+          )}
+
+          {(phase === 'showing' || phase === 'input' || phase === 'prompt') && (
             <motion.div
               key="play"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="flex-1 w-full flex flex-col items-center justify-between"
             >
               {/* Top: title + state */}
-              <div className="text-center mt-4">
+              <div className="text-center mt-2">
                 <div className="text-[10px] uppercase tracking-[2px] font-bold text-ink3 mb-1">Memoria · Round {roundNum + 1}</div>
-                <h2 className="text-[24px] font-black text-ink tracking-tight">
-                  {phase === 'showing' ? 'Watch carefully…' : 'Your turn 👆'}
-                </h2>
+                <motion.h2
+                  key={phase}
+                  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                  className="text-[26px] font-black text-ink tracking-tight"
+                >
+                  {phase === 'showing' ? '👀 Watching…' : phase === 'prompt' ? '👇 Now repeat it!' : 'Your turn 👆'}
+                </motion.h2>
+                {phase === 'input' && (
+                  <p className="text-[12px] text-ink3 mt-1 font-medium">Tap in the order Nonna showed</p>
+                )}
               </div>
 
               {/* Sequence dots */}
@@ -1133,6 +1268,7 @@ function OrderRound({ roundNum, onComplete }) {
   const [inputIdx, setInputIdx] = useState(0);
   const [result, setResult] = useState(null);
   const [shake, setShake] = useState(0);
+  const isFirst = roundNum === 0;
 
   const customer = useMemo(() => CUSTOMERS[roundNum % CUSTOMERS.length], [roundNum]);
   const sequence = useMemo(() => {
@@ -1142,10 +1278,7 @@ function OrderRound({ roundNum, onComplete }) {
   }, [roundNum]);
 
   useEffect(() => {
-    if (phase !== 'intro') return;
-    sfx.phase();
-    const t = setTimeout(() => setPhase('input'), 1700);
-    return () => clearTimeout(t);
+    if (phase === 'intro') sfx.phase();
   }, [phase]);
 
   const handleTap = useCallback((type) => {
@@ -1181,14 +1314,32 @@ function OrderRound({ roundNum, onComplete }) {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
               className="flex-1 flex flex-col items-center justify-center text-center"
             >
-              <div className="text-[80px] mb-3 leading-none pulse-emoji">{customer.portrait}</div>
-              <div className="text-[11px] uppercase tracking-[2px] font-extrabold text-gold mb-2">Posh Order</div>
-              <h2 className="text-[28px] font-black text-ink tracking-tight mb-3 leading-tight">{customer.name}</h2>
-              <p className="text-[15px] text-ink2 italic max-w-[300px] leading-relaxed font-medium">"{customer.quote}"</p>
+              <motion.div
+                animate={{ y: [0, -6, 0], rotate: [-3, 3, -3] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-[88px] mb-3 leading-none"
+              >{customer.portrait}</motion.div>
+              <div className="text-[11px] uppercase tracking-[2px] font-extrabold text-gold mb-2">{isFirst ? 'Mini-game · Posh Order' : 'Posh Order'}</div>
+              <h2 className="text-[30px] font-black text-ink tracking-tight mb-3 leading-tight">{customer.name}</h2>
+              <p className="text-[15px] text-ink2 italic max-w-[300px] leading-relaxed font-medium mb-2">"{customer.quote}"</p>
+              <p className="text-[12px] text-ink3 max-w-[280px] leading-relaxed mb-7 px-2">
+                {isFirst
+                  ? <>A customer arrives. <b className="text-gold">Tap each ingredient in order</b>. Wrong = customer leaves empty-handed.</>
+                  : <>Tap each ingredient in their order. <b className="text-gold">Bonus length</b> on success.</>}
+              </p>
+              <motion.button
+                initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 280 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setPhase('input')}
+                onTouchStart={(e) => { e.preventDefault(); setPhase('input'); }}
+                className="px-9 py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider bg-cocoa text-mascarpone shadow-large active:scale-[0.97] transition-transform"
+              >
+                See the order →
+              </motion.button>
             </motion.div>
           )}
 

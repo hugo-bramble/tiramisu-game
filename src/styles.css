@@ -62,6 +62,29 @@ button { touch-action: manipulation; font-family: inherit; }
 .flag-stripe span:nth-child(2) { background: #f1f2f1; }
 .flag-stripe span:nth-child(3) { background: #ce2b37; }
 
+/* Phase-based backdrops: afternoon → dusk → night */
+.bg-phase-1 { background: radial-gradient(ellipse at 50% 35%, #fff8e7 0%, #fdf6e8 80%); transition: background 1.2s ease-out; }
+.bg-phase-2 { background: radial-gradient(ellipse at 50% 32%, #ffe9c8 0%, #fce0b8 90%); transition: background 1.2s ease-out; }
+.bg-phase-3 { background: radial-gradient(ellipse at 50% 28%, #ffd1a8 0%, #f7b58a 95%); transition: background 1.2s ease-out; }
+.bg-phase-4 { background: radial-gradient(ellipse at 50% 22%, #e8a3b8 0%, #c98298 95%); transition: background 1.2s ease-out; }
+.bg-phase-5 { background: radial-gradient(ellipse at 50% 18%, #9a8eb8 0%, #6e6493 95%); transition: background 1.2s ease-out; }
+
+/* Subtle starlight twinkle for late phases */
+.bg-phase-4::before, .bg-phase-5::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,0.55) 1px, transparent 2px),
+    radial-gradient(circle at 78% 12%, rgba(255,255,255,0.4) 1px, transparent 2px),
+    radial-gradient(circle at 32% 8%, rgba(255,255,255,0.5) 0.8px, transparent 2px),
+    radial-gradient(circle at 92% 24%, rgba(255,255,255,0.35) 0.8px, transparent 2px),
+    radial-gradient(circle at 48% 14%, rgba(255,255,255,0.4) 0.8px, transparent 2px);
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
 /* Tiramisu visuals */
 .layer-lady {
   background: #e8c897;
