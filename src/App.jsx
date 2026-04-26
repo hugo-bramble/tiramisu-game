@@ -259,7 +259,7 @@ function Welcome({ onStart }) {
       kind: 'setting',
       eyebrow: 'Chelsea · Sunday',
       title: 'This afternoon',
-      body: "It's a Sunday in April. Cadogan Square is in full bloom. A crowd has gathered outside Chelsea Town Hall, sipping flat whites.",
+      body: "It's a Sunday in April on the King's Road. A crowd has gathered outside Chelsea Old Town Hall, sipping flat whites and pretending they don't care.",
     },
     {
       kind: 'setting',
@@ -440,9 +440,10 @@ function Welcome({ onStart }) {
 
         {step === PROFILE_STEP && (
           <>
-            <div className="text-[44px] mb-1 leading-none select-none mt-2">👋</div>
+            <div className="text-[10px] uppercase tracking-[1.5px] font-extrabold text-gold mb-2">Before you begin</div>
+            <div className="text-[44px] mb-1 leading-none select-none">👋</div>
             <h2 className="text-[22px] font-black text-ink tracking-tight leading-tight mb-1">Who are you?</h2>
-            <p className="text-[12px] text-ink2 mb-5 px-2">For the global leaderboard. Pick a side.</p>
+            <p className="text-[12px] text-ink2 mb-5 px-2">Pick a name and a side. Both go on the leaderboard.</p>
 
             <input
               type="text"
@@ -493,8 +494,8 @@ function Welcome({ onStart }) {
           const isLast = step === READY_STEP;
           return (
             <div className="mt-2">
-              <div className="text-[10px] uppercase tracking-[1.5px] font-extrabold text-ink3 mb-3">
-                Step {slideIdx + 1} of {TUTORIAL_COUNT}
+              <div className="text-[10px] uppercase tracking-[1.5px] font-extrabold text-gold mb-3">
+                How to play · {slideIdx + 1} of {TUTORIAL_COUNT}
               </div>
               <motion.div
                 key={slideIdx}
