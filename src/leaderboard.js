@@ -8,20 +8,21 @@
 //
 // Test-mode rules allow anyone to read/write. For production you'd
 // want hardened rules + a Cloudflare Worker proxy or App Check token.
-const PROJECT_ID = import.meta.env.VITE_FIRESTORE_PROJECT_ID || '';
+const PROJECT_ID = 'tiramisu-game';
+const API_KEY = 'AIzaSyCRm0PzMgpbjGVpdbND3nEQspFiY6B8Q3o';
 const COLLECTION = 'leaderboard';
 
-const isConfigured = () => !!PROJECT_ID;
+const isConfigured = () => !!PROJECT_ID && !!API_KEY;
 
 const baseUrl = () =>
-  `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${COLLECTION}`;
+  `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${COLLECTION}?key=${API_KEY}`;
 
 export async function fetchGlobalLeaderboard(limit = 25) {
   if (!isConfigured()) return null;
   try {
     // Use runQuery for ordered + limited results (more efficient than client-side sort)
     const queryUrl =
-      `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+      `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery?key=${API_KEY}`;
     const body = {
       structuredQuery: {
         from: [{ collectionId: COLLECTION }],
