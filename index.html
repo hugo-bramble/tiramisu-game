@@ -30,7 +30,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; background: var(--bg); color: var(--text); touch-action: manipulation; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
-  button { touch-action: manipulation; }
+  button { touch-action: manipulation; font-family: inherit; }
   #game { position: fixed; inset: 0; display: flex; flex-direction: column; }
 
   #stripe { position: absolute; top: 0; left: 0; right: 0; height: 3px; display: flex; z-index: 5; pointer-events: none; }
@@ -42,21 +42,32 @@
   header { padding: 18px 18px 14px; background: var(--bg); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; z-index: 10; }
   .title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
   .multiplier-wrap { display: flex; justify-content: center; }
-  #multiplier { font-size: 15px; font-weight: 800; padding: 6px 14px; border-radius: 100px; background: var(--surface-2); color: var(--text-2); transition: background 0.3s, color 0.3s, box-shadow 0.3s; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
+  #multiplier { font-size: 16px; font-weight: 800; padding: 6px 14px; border-radius: 100px; background: var(--surface-2); color: var(--text-2); transition: background 0.3s, color 0.3s, box-shadow 0.3s; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
   #multiplier.t1 { background: var(--surface-2); color: var(--text-2); }
   #multiplier.t2 { background: var(--gold-soft); color: var(--cocoa); }
   #multiplier.t3 { background: var(--gold); color: #fff; box-shadow: 0 4px 14px rgba(201,123,26,0.35); }
   #multiplier.t4 { background: linear-gradient(90deg, #f59e0b, #ef4444); color: #fff; box-shadow: 0 4px 18px rgba(239,68,68,0.45); }
   #multiplier.bump { animation: bumpPulse 0.4s ease-out; }
-  @keyframes bumpPulse { 0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  @keyframes bumpPulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
   .meters { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
   .meters-row { display: flex; align-items: baseline; gap: 4px; }
-  .length-num { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.6px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .length-num { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.6px; font-variant-numeric: tabular-nums; line-height: 1; transition: transform 0.2s ease-out; }
+  .length-num.bump { animation: lengthBump 0.4s ease-out; }
+  @keyframes lengthBump { 0%, 100% { transform: scale(1); color: var(--text); } 50% { transform: scale(1.18); color: var(--gold); } }
   .length-unit { font-size: 11px; color: var(--text-2); font-weight: 600; }
-  .hearts { font-size: 12px; color: var(--red); letter-spacing: 1.5px; }
+  .hearts { font-size: 12px; color: var(--red); letter-spacing: 1.5px; transition: transform 0.3s; }
+  .hearts.lose { animation: heartLose 0.5s ease-out; }
+  @keyframes heartLose { 0% { transform: scale(1); } 30% { transform: scale(1.4); } 100% { transform: scale(1); } }
   .hearts .empty { color: var(--text-3); }
 
   #stage { flex: 1; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 35%, var(--bg-2) 0%, var(--bg) 80%); }
+  #stage.shake { animation: shake 0.35s ease-out; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+  /* Red flash on miss */
+  #flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 28; box-shadow: inset 0 0 80px 20px rgba(239, 68, 68, 0.6); }
+  #flash.fire { animation: flashFire 0.4s ease-out; }
+  @keyframes flashFire { 0% { opacity: 1; } 100% { opacity: 0; } }
 
   /* PROGRESS */
   #progress { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 6; }
@@ -126,11 +137,13 @@
 
   /* TAP BUTTON */
   #tap { position: absolute; bottom: 0; left: 0; right: 0; height: 130px; padding: 14px 16px calc(20px + env(safe-area-inset-bottom)); display: flex; align-items: stretch; z-index: 7; background: linear-gradient(0deg, var(--bg) 65%, transparent); }
-  #tap-btn { flex: 1; border: none; border-radius: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 20px; transition: transform 0.08s ease, opacity 0.08s; font-family: inherit; position: relative; overflow: hidden; box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18); }
+  #tap-btn { flex: 1; border: none; border-radius: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 20px; transition: transform 0.08s ease, opacity 0.08s, box-shadow 0.3s; font-family: inherit; position: relative; overflow: hidden; box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18); }
   #tap-btn:active { transform: scale(0.98); opacity: 0.92; box-shadow: 0 4px 12px rgba(74, 40, 24, 0.16); }
   #tap-btn.lady { background: linear-gradient(180deg, #f0d4a4 0%, #d4a574 100%); color: var(--cocoa); }
   #tap-btn.cream { background: linear-gradient(180deg, #fffbe6 0%, #f5e6c8 100%); color: var(--cocoa); border: 1px solid var(--border-2); }
   #tap-btn.cocoa { background: linear-gradient(180deg, #6b3d1f 0%, #3d2817 100%); color: var(--mascarpone); }
+  #tap-btn.tut-glow { animation: tapGlow 1.4s ease-in-out infinite; }
+  @keyframes tapGlow { 0%, 100% { box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18), 0 0 0 0 rgba(201,123,26,0.6); } 50% { box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18), 0 0 0 14px rgba(201,123,26,0); } }
   #tap-icon { font-size: 38px; line-height: 1; }
   #tap-text { display: flex; flex-direction: column; align-items: flex-start; }
   #tap-name { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.1; }
@@ -142,28 +155,30 @@
   #espresso .badge { position: absolute; top: -5px; right: -5px; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); }
   @keyframes bounceE { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
-  /* TOASTS (stacking) */
-  #toasts { position: absolute; top: 96px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 20; pointer-events: none; padding: 0 16px; }
-  .toast { padding: 9px 16px; background: var(--text); color: var(--bg); border-radius: 100px; font-weight: 700; font-size: 12.5px; box-shadow: var(--shadow-lg); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.1px; animation: toastIn 0.22s ease-out forwards, toastOut 0.4s 2s forwards; }
-  .toast.green { background: var(--green); color: #fff; }
-  .toast.red { background: var(--red); color: #fff; }
-  .toast.gold { background: var(--gold); color: #fff; }
-  .toast.golden-slice { background: linear-gradient(90deg, #fbbf24, #f59e0b); color: #fff; box-shadow: 0 6px 20px rgba(251,191,36,0.5); font-size: 14px; padding: 11px 22px; font-weight: 800; }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(-12px) scale(0.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-8px); } }
+  /* SINGLE BIG TOAST — bigger, longer, replace not stack */
+  #toast { position: absolute; top: 92px; left: 50%; transform: translateX(-50%) translateY(-12px); padding: 12px 22px; background: var(--text); color: var(--bg); border-radius: 100px; font-weight: 800; font-size: 15px; opacity: 0; pointer-events: none; z-index: 20; box-shadow: var(--shadow-lg); white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; transition: opacity 0.25s ease, transform 0.25s ease; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.green { background: var(--green); color: #fff; }
+  #toast.red { background: var(--red); color: #fff; }
+  #toast.gold { background: var(--gold); color: #fff; }
+  #toast.golden-slice { background: linear-gradient(90deg, #fbbf24, #f59e0b); color: #fff; box-shadow: 0 8px 24px rgba(251,191,36,0.55); font-size: 16px; padding: 13px 26px; }
 
-  /* PHASE BANNER */
-  #phase-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 16px 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; text-align: center; z-index: 24; opacity: 0; pointer-events: none; box-shadow: var(--shadow-lg); }
-  #phase-banner.show { animation: pbShow 2s forwards; }
-  @keyframes pbShow { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
-  #phase-banner .pb-label { font-size: 10px; color: var(--text-3); letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
-  #phase-banner .pb-name { font-size: 26px; font-weight: 800; color: var(--gold); letter-spacing: -0.6px; }
+  /* TUTORIAL HINTS — inline pointer + meter callout */
+  #hint-pointer { position: absolute; bottom: 168px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 23; display: none; flex-direction: column; align-items: center; gap: 6px; animation: hintBounce 0.9s ease-in-out infinite; }
+  #hint-pointer.show { display: flex; }
+  #hint-pointer .arrow { font-size: 38px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(201,123,26,0.5)); }
+  #hint-pointer .label { background: var(--gold); color: #fff; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 800; letter-spacing: 0.3px; box-shadow: 0 6px 18px rgba(201,123,26,0.5); white-space: nowrap; }
+  @keyframes hintBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-12px); } }
 
-  /* MILESTONE */
+  #hint-meter { position: absolute; bottom: 200px; left: 16px; right: 16px; pointer-events: none; z-index: 23; display: none; align-items: center; justify-content: center; gap: 8px; }
+  #hint-meter.show { display: flex; }
+  #hint-meter .label { background: var(--green); color: #fff; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 800; letter-spacing: 0.2px; box-shadow: 0 6px 18px rgba(16,185,129,0.45); }
+
+  /* MILESTONE BANNER (auto-fade for small milestones) */
   #milestone { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 8px; z-index: 25; pointer-events: none; }
-  #milestone.show { display: flex; animation: msFade 2.4s forwards; }
+  #milestone.show { display: flex; animation: msFade 2.6s forwards; }
   @keyframes msFade { 0% { opacity: 0; } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
-  #milestone-text { font-size: 36px; font-weight: 900; color: var(--gold); text-shadow: 0 4px 16px rgba(201, 123, 26, 0.4); letter-spacing: -0.5px; animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; padding: 0 20px; }
+  #milestone-text { font-size: 38px; font-weight: 900; color: var(--gold); text-shadow: 0 4px 16px rgba(201, 123, 26, 0.4); letter-spacing: -0.5px; animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; padding: 0 20px; }
   #milestone-sub { font-size: 14px; color: var(--text); padding: 0 30px; text-align: center; font-weight: 600; }
   @keyframes pop-in { from { transform: scale(0.3); } to { transform: scale(1); } }
 
@@ -177,7 +192,7 @@
   .modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 26px; padding: 28px 22px 20px; text-align: center; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); max-height: 92vh; overflow-y: auto; }
   @keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .modal-emoji { font-size: 48px; margin-bottom: 4px; line-height: 1; }
-  .modal-card h2 { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 4px; letter-spacing: -0.6px; }
+  .modal-card h2 { font-size: 28px; font-weight: 800; color: var(--text); margin-bottom: 4px; letter-spacing: -0.6px; }
   .modal-sub { font-size: 11px; color: var(--gold); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; }
   .modal-tag { font-size: 14px; color: var(--text); margin-bottom: 18px; line-height: 1.5; padding: 0 4px; font-weight: 400; }
   .modal-tag b { color: var(--gold); font-weight: 700; }
@@ -197,6 +212,15 @@
   .modal-btn.ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border-2); }
   .modal-btn:active { transform: scale(0.97); opacity: 0.9; }
 
+  /* PAUSE MODAL — phase up + big milestones (uses .modal styling but with celebratory flavor) */
+  .pause-card { background: var(--surface); border: 2px solid var(--gold); border-radius: 26px; padding: 32px 24px 22px; text-align: center; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg), 0 0 0 8px rgba(201,123,26,0.1); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .pause-card.celebrate { background: linear-gradient(180deg, #fff8e7, #fef3d9); }
+  .pause-emoji { font-size: 64px; line-height: 1; margin-bottom: 6px; animation: pulseEmoji 1.5s ease-in-out infinite; }
+  @keyframes pulseEmoji { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+  .pause-label { font-size: 11px; color: var(--gold); font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .pause-card h2 { font-size: 32px; font-weight: 900; color: var(--text); margin-bottom: 6px; letter-spacing: -0.7px; }
+  .pause-card p { font-size: 14px; color: var(--text-2); margin-bottom: 22px; line-height: 1.45; padding: 0 8px; font-weight: 500; }
+
   /* GAME OVER */
   #gameover { position: absolute; inset: 0; background: rgba(253, 246, 232, 0.94); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px; z-index: 30; padding: 24px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
   #gameover.show { display: flex; }
@@ -212,21 +236,6 @@
   .restart { background: var(--cocoa); color: var(--mascarpone); border: none; }
   .share { background: transparent; color: var(--text-2); border: 1px solid var(--border-2); padding: 11px 24px; font-size: 12px; }
   .restart:active, .share:active { transform: scale(0.97); }
-
-  /* TUTORIAL */
-  #tut-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 55; display: none; }
-  #tut-overlay.show { display: block; }
-  #spotlight { position: absolute; left: 0; right: 0; top: 0; background: rgba(31, 17, 8, 0.55); transition: clip-path 0.35s ease-out; pointer-events: none; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
-  #tut-ring { position: absolute; pointer-events: none; border-radius: 14px; box-shadow: 0 0 0 3px var(--gold), 0 0 24px rgba(201, 123, 26, 0.6); animation: ringPulse 1.4s ease-in-out infinite; z-index: 56; display: none; transition: top 0.35s, left 0.35s, width 0.35s, height 0.35s; }
-  #tut-ring.show { display: block; }
-  @keyframes ringPulse { 0%, 100% { box-shadow: 0 0 0 3px var(--gold), 0 0 18px rgba(201,123,26,0.5); } 50% { box-shadow: 0 0 0 5px var(--gold), 0 0 32px rgba(201,123,26,0.85); } }
-  #tut-card { position: absolute; left: 16px; right: 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 16px 18px; border-radius: 18px; box-shadow: var(--shadow-lg); transition: top 0.35s ease-out, bottom 0.35s ease-out; pointer-events: auto; cursor: pointer; z-index: 57; }
-  #tut-step { font-size: 10px; color: var(--gold); font-weight: 800; letter-spacing: 1.5px; margin-bottom: 6px; text-transform: uppercase; }
-  #tut-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; color: var(--text); letter-spacing: -0.3px; }
-  #tut-body { font-size: 13.5px; line-height: 1.5; color: var(--text); margin-bottom: 8px; font-weight: 400; }
-  #tut-hint { font-size: 12px; color: var(--gold); font-weight: 700; }
-  #tut-skip { position: absolute; top: 14px; right: 14px; background: var(--surface); border: 1px solid var(--border-2); color: var(--text-2); padding: 7px 14px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; pointer-events: auto; z-index: 58; font-family: inherit; box-shadow: var(--shadow); }
-  #tut-skip:active { transform: scale(0.95); }
 </style>
 </head>
 <body>
@@ -243,6 +252,8 @@
   </header>
 
   <div id="stage">
+    <div id="flash"></div>
+
     <div id="progress">
       <div id="progress-row">
         <span>0m</span>
@@ -280,12 +291,11 @@
       </div>
     </div>
 
-    <div id="toasts"></div>
+    <div id="hint-meter"><div class="label">Tap when GREEN ✨</div></div>
+    <div id="hint-pointer"><div class="arrow">👇</div><div class="label">TAP HERE</div></div>
 
-    <div id="phase-banner">
-      <div class="pb-label">Phase unlocked</div>
-      <div class="pb-name" id="pb-name"></div>
-    </div>
+    <div id="toast"></div>
+
     <div id="milestone">
       <div id="milestone-text"></div>
       <div id="milestone-sub"></div>
@@ -319,15 +329,13 @@
       </div>
     </div>
 
-    <div id="tut-overlay">
-      <div id="spotlight"></div>
-      <div id="tut-ring"></div>
-      <button id="tut-skip" onclick="endTutorial()">Skip</button>
-      <div id="tut-card">
-        <div id="tut-step"></div>
-        <div id="tut-title"></div>
-        <div id="tut-body"></div>
-        <div id="tut-hint"></div>
+    <div id="pause" class="modal">
+      <div class="modal-card pause-card celebrate">
+        <div class="pause-emoji" id="pause-emoji">🎉</div>
+        <div class="pause-label" id="pause-label">PHASE UP</div>
+        <h2 id="pause-title">Pasticcere</h2>
+        <p id="pause-sub">The meter speeds up. Stay sharp.</p>
+        <button class="modal-btn primary" onclick="resumeGame()">Continua</button>
       </div>
     </div>
 
@@ -336,7 +344,7 @@
       <div class="final-label">Final length</div>
       <div class="final" id="final-length">0.0m</div>
       <div class="stars" id="stars"></div>
-      <div class="best-row" id="best-row">Best: <b id="best-value">0.0m</b></div>
+      <div class="best-row" id="best-row">Best: <b>0.0m</b></div>
       <p id="verdict"></p>
       <button class="restart" onclick="restart()">Play again</button>
       <button class="share" onclick="share()">Share score</button>
@@ -352,13 +360,12 @@ const GOAL_CM = 30000;
 const RECORD_CM = 27500;
 const POINTS = { perfect: 40, good: 18, bad: 0 };
 
-// Tightened pacing — Phase 1 is now ~30s, real challenge starts fast
 const PHASES = [
-  { name: 'Apprentice', threshold: 0,     speed: 0.6,  green: 36 }, // 0-8m: ~30s warmup
-  { name: 'Pasticcere', threshold: 800,   speed: 1.0,  green: 27 }, // 8-30m
-  { name: 'Maestro',    threshold: 3000,  speed: 1.4,  green: 20 }, // 30-90m
-  { name: 'Virtuoso',   threshold: 9000,  speed: 1.85, green: 15 }, // 90-200m
-  { name: 'Leggenda',   threshold: 20000, speed: 2.4,  green: 11 }, // 200m+
+  { name: 'Apprentice', threshold: 0,     speed: 0.6,  green: 36, sub: 'Wide green zone, slow meter — get the timing' },
+  { name: 'Pasticcere', threshold: 800,   speed: 1.0,  green: 27, sub: 'The meter speeds up. Stay sharp.' },
+  { name: 'Maestro',    threshold: 3000,  speed: 1.4,  green: 20, sub: 'Faster, tighter — perfetti now matter more' },
+  { name: 'Virtuoso',   threshold: 9000,  speed: 1.85, green: 15, sub: 'Punishing pace. Save your espresso!' },
+  { name: 'Leggenda',   threshold: 20000, speed: 2.4,  green: 11, sub: 'Mastery only. The crowd holds its breath.' },
 ];
 
 const MILESTONES = [
@@ -366,59 +373,34 @@ const MILESTONES = [
   { m: 80, text: 'Ottanta!', sub: "King's Road traffic is stopped", garnish: '🍓' },
   { m: 150, text: '150 metri!', sub: 'Saatchi Gallery wants to display it', garnish: '🍫', heart: true },
   { m: 220, text: 'Duecentoventi!', sub: 'Peter Jones runs out of mascarpone' },
-  { m: 275, text: '🏆 Record broken!', sub: 'Stamford Bridge cheers from across town!', heart: true },
-  { m: 300, text: '🏆 300 metri!', sub: 'Chelsea pensioners weep with pride!', heart: true },
+  // Pause-and-celebrate moments
+  { m: 275, text: '🏆 Record broken!', sub: 'Stamford Bridge cheers from across town!', heart: true, pause: true, emoji: '🏆', label: 'WORLD RECORD' },
+  { m: 300, text: '🏆 300 metri!', sub: 'Chelsea pensioners weep with pride!', heart: true, pause: true, emoji: '👑', label: 'GOAL REACHED' },
   { m: 400, text: 'Quattrocento!', sub: 'Cadogan Estate offers you a flat (£8m)' },
 ];
 
-// Multiple Chelsea-Italian joke pools — different lines for different events
+// Toast pools — used sparingly (only on key events)
 const JOKES = {
-  perfect: [
-    'Better than the Pret next door!',
-    'Squisito — Saatchi-worthy!',
-    'The Bluebird is jealous',
-    'Più bello del Granger brunch',
-    'Joe & The Juice could never',
-    'Bellissimo, darling!',
-    "Magnifico, old bean!",
-    "Mamma mia, that's posh!",
-    'Like Padella but tiramisu',
-    'Splendido! Cadogan approves',
-    'Even M&S Food respects this',
-    'Eccellente, sweetie!',
-    'Bravissimo! The pensioners cheer',
-  ],
-  good: [
-    'Va bene, not bad',
-    'Pimlico nods politely',
-    'Fulham would settle for that',
-    'Acceptable, caro',
-    'Almost Bluebird-tier',
-    'Continua! Più precision',
-    'Decent. SW3 is patient.',
-  ],
   bad: [
     'Sloppy! Cadogan disapproves',
     'Madonna mia, what a mess',
     'Ma che fai?! Disastro!',
-    'Even Pret\'s tiramisu is better',
+    "Even Pret's tiramisu beat that",
     'The pensioners gasp in horror',
     'Peter Jones returns it',
     'Madonna santa, riprova!',
+    "Worse than the King's Road traffic",
   ],
   slice: [
     'Una fetta perfetta!',
     'Slice complete, darling',
-    'Bellissima fetta!',
     'Sloane mums approve',
     'The Bluebird applauds',
     "Fit for the King's Road",
-    "Saatchi-worthy slice!",
     'Buonissimo, old bean',
     'Cadogan estate impressed',
-    'Pimlico crowd cheers',
-    'Posher than Granger & Co',
     'Avanti — più tiramisu!',
+    'Posher than Granger & Co',
   ],
   golden: [
     '🌟 GOLDEN SLICE — Vogue Italia approves!',
@@ -427,15 +409,20 @@ const JOKES = {
     '🌟 PERFETTO — Eataly wants the recipe!',
     '🌟 LEGGENDARIA — King Charles applauds!',
   ],
+  multUp: {
+    2: ['×2 MULTIPLIER!', '×2 — On a roll, darling!'],
+    3: ['×3 — Magnifico streak!', '×3 — Sloane Square impressed'],
+    5: ['×5 — Bellissimo combo!', '×5 — Saatchi takes notes'],
+    8: ['×8 LEGGENDARIO!', '×8 — Vogue is calling!'],
+  },
 };
 
-let state, tutorialActive = false, tutorialStep = 0;
+let state, hintActive = false, hintStage = 0, paused = false;
 const $ = id => document.getElementById(id);
 
 function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 function fmt(cm) { return (cm / 100).toFixed(cm < 1000 ? 2 : 1); }
 
-// Multiplier tiers
 function multTier(combo) {
   if (combo >= 12) return { mult: 8, tier: 4, label: '×8' };
   if (combo >= 8) return { mult: 5, tier: 3, label: '×5' };
@@ -444,10 +431,10 @@ function multTier(combo) {
   return { mult: 1, tier: 1, label: '×1' };
 }
 
-function startGame(showTut) {
+function startGame(showHints) {
   $('welcome').classList.remove('show');
   init();
-  if (showTut) startTutorial();
+  if (showHints) startHints();
 }
 
 function init() {
@@ -458,13 +445,16 @@ function init() {
     phaseIdx: -1, speed: PHASES[0].speed, greenW: PHASES[0].green,
     perfectCombo: 0, espresso: 0, espressoActive: 0,
     milestonesShown: new Set(), garnishes: [], running: true,
+    seenMultTiers: new Set([1]),
   };
+  paused = false;
   $('trough-track').innerHTML = ''; $('trough-track').style.transform = 'translateX(0)';
   $('builder').innerHTML = '';
-  $('toasts').innerHTML = '';
   $('gameover').classList.remove('show');
+  $('pause').classList.remove('show');
   $('espresso').classList.remove('show');
-  applyPhase();
+  endHints();
+  applyPhase(true);
   renderDots();
   updateTapButton();
   updateMultiplier();
@@ -472,11 +462,10 @@ function init() {
   requestAnimationFrame(tick);
 }
 
-function applyPhase() {
+function applyPhase(isInitial) {
   let idx = 0;
   for (let i = PHASES.length - 1; i >= 0; i--) if (state.length >= PHASES[i].threshold) { idx = i; break; }
-  if (idx === state.phaseIdx) return;
-  const wasFirst = state.phaseIdx < 0;
+  if (idx === state.phaseIdx) return false;
   state.phaseIdx = idx;
   const p = PHASES[idx];
   state.speed = p.speed;
@@ -485,11 +474,12 @@ function applyPhase() {
   const g = p.green, y = (100 - g) * 0.35, r = (100 - g - 2*y) / 2;
   const zs = document.querySelectorAll('#meter-zones .zone');
   [r, y, g, y, r].forEach((w, i) => zs[i].style.width = w + '%');
-  if (!wasFirst) {
-    $('pb-name').textContent = p.name;
-    const pb = $('phase-banner'); pb.classList.remove('show'); void pb.offsetWidth; pb.classList.add('show');
+  if (!isInitial) {
+    pauseGame({ emoji: '⚡', label: 'PHASE ' + (idx + 1), title: p.name, sub: p.sub });
     if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
+    return true;
   }
+  return false;
 }
 
 function getQuality() {
@@ -519,24 +509,28 @@ function renderDots() {
 function updateTapButton() {
   const type = RECIPE[state.layerIdx];
   const btn = $('tap-btn');
-  btn.className = type;
+  // preserve tut-glow class
+  const glow = btn.classList.contains('tut-glow');
+  btn.className = type + (glow ? ' tut-glow' : '');
   $('tap-icon').textContent = ICONS[type];
   $('tap-name').textContent = NAMES[type];
 }
 
-function updateMultiplier(bump) {
+function updateMultiplier() {
   const t = multTier(state.perfectCombo);
   const el = $('multiplier');
   const prev = el.textContent;
   el.textContent = t.label;
   el.className = 't' + t.tier;
-  if (bump || (prev !== t.label)) {
+  if (prev !== t.label) {
     el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
   }
 }
 
-function updateUI() {
-  $('length').textContent = fmt(state.length);
+function updateUI(bumpLength) {
+  const el = $('length');
+  el.textContent = fmt(state.length);
+  if (bumpLength) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
   $('hearts').innerHTML = '♥'.repeat(state.lives) + '<span class="empty">' + '♡'.repeat(3 - state.lives) + '</span>';
   const pct = Math.min(100, (state.length / GOAL_CM) * 100);
   $('progress-fill').style.width = pct + '%';
@@ -548,10 +542,10 @@ function updateUI() {
 }
 
 function tick() {
-  if (!state || !state.running) return;
+  if (!state || !state.running || paused) return;
   let eff = state.speed;
   if (state.espressoActive > 0) eff *= 0.4;
-  if (tutorialActive && tutorialStep === 1) eff *= 0.6;
+  if (hintActive && hintStage === 0) eff *= 0.55; // slow during initial hint
   state.markerPos += state.markerDir * eff;
   if (state.markerPos >= 100) { state.markerPos = 100; state.markerDir = -1; }
   if (state.markerPos <= 0) { state.markerPos = 0; state.markerDir = 1; }
@@ -559,15 +553,15 @@ function tick() {
   requestAnimationFrame(tick);
 }
 
-function showToast(msg, kind) {
-  const container = $('toasts');
-  const t = document.createElement('div');
-  t.className = 'toast' + (kind ? ' ' + kind : '');
+function showToast(msg, kind, dur) {
+  const t = $('toast');
   t.textContent = msg;
-  container.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-  // Cap to 4 visible at once
-  while (container.children.length > 4) container.removeChild(container.firstChild);
+  t.className = ''; if (kind) t.classList.add(kind);
+  // force reflow to restart transition
+  void t.offsetWidth;
+  t.classList.add('show');
+  clearTimeout(showToast.t);
+  showToast.t = setTimeout(() => t.classList.remove('show'), dur || 2400);
 }
 
 function spawnParticles(x, y, emojis, count) {
@@ -582,7 +576,12 @@ function spawnParticles(x, y, emojis, count) {
   }
 }
 
-function showMilestone(text, sub) {
+function flashRed() {
+  const f = $('flash'); f.classList.remove('fire'); void f.offsetWidth; f.classList.add('fire');
+  const s = $('stage'); s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
+}
+
+function showMilestoneBanner(text, sub) {
   $('milestone-text').textContent = text; $('milestone-sub').textContent = sub;
   const m = $('milestone'); m.classList.remove('show'); void m.offsetWidth; m.classList.add('show');
   if (navigator.vibrate) navigator.vibrate([20, 40, 20, 40, 60]);
@@ -593,23 +592,40 @@ function checkMilestones() {
   for (const ms of MILESTONES) {
     if (m >= ms.m && !state.milestonesShown.has(ms.m)) {
       state.milestonesShown.add(ms.m);
-      showMilestone(ms.text, ms.sub);
       if (ms.heart) state.lives = Math.min(3, state.lives + 1);
       if (ms.garnish) state.garnishes.push(ms.garnish);
+      if (ms.pause) {
+        pauseGame({ emoji: ms.emoji || '🏆', label: ms.label || 'MILESTONE', title: ms.text, sub: ms.sub });
+      } else {
+        showMilestoneBanner(ms.text, ms.sub);
+      }
     }
   }
 }
 
+function pauseGame(info) {
+  paused = true;
+  $('pause-emoji').textContent = info.emoji;
+  $('pause-label').textContent = info.label;
+  $('pause-title').textContent = info.title;
+  $('pause-sub').textContent = info.sub;
+  $('pause').classList.add('show');
+}
+
+function resumeGame() {
+  $('pause').classList.remove('show');
+  paused = false;
+  if (state && state.running) requestAnimationFrame(tick);
+}
+
 function tap() {
-  if (!state || !state.running) return;
+  if (!state || !state.running || paused) return;
   const quality = getQuality();
   const type = RECIPE[state.layerIdx];
 
-  // Adjust combo first (multiplier applies to THIS tap based on new combo)
-  let prevTier = multTier(state.perfectCombo).tier;
+  const prevTier = multTier(state.perfectCombo).tier;
   if (quality === 'perfect') state.perfectCombo++;
   else if (quality === 'bad') state.perfectCombo = 0;
-  // 'good' keeps the combo but doesn't grow it
   const m = multTier(state.perfectCombo);
 
   // Visual layer
@@ -618,30 +634,34 @@ function tap() {
   $('builder').insertBefore(layer, $('builder').firstChild);
   state.sliceLayers.push({ type, quality });
 
-  // Score with multiplier
   const pts = POINTS[quality] * m.mult;
   state.length += pts;
 
-  // Toast logic
-  if (quality === 'perfect') {
+  // Toasts: ONLY on key moments (not every tap)
+  if (quality === 'bad') {
+    state.lives--;
+    flashRed();
+    showToast(pick(JOKES.bad) + ' −1 ♥', 'red', 2500);
+    $('hearts').classList.remove('lose'); void $('hearts').offsetWidth; $('hearts').classList.add('lose');
+    if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+    if (state.lives <= 0) { updateUI(); updateMultiplier(); return endGame(); }
+  } else if (quality === 'perfect') {
     if (state.perfectCombo > 0 && state.perfectCombo % 5 === 0) {
       state.espresso++;
       $('esp-badge').textContent = state.espresso;
       $('espresso').classList.add('show');
-      showToast('☕ Espresso earned!', 'gold');
+      showToast('☕ Espresso earned!', 'gold', 2400);
+    } else if (m.tier > prevTier && JOKES.multUp[m.mult]) {
+      // Multiplier tier-up — celebrate
+      showToast(pick(JOKES.multUp[m.mult]), 'green', 2400);
     }
-    showToast(pick(JOKES.perfect) + ` +${pts}cm`, 'green');
+    // Otherwise silent — score number bumps in header
     const r = $('builder').getBoundingClientRect();
     spawnParticles(r.left + r.width / 2, r.top, ['✨','⭐'], 3);
     if (navigator.vibrate) navigator.vibrate([10, 15, 10]);
-  } else if (quality === 'good') {
-    showToast(pick(JOKES.good) + ` +${pts}cm`);
-    if (navigator.vibrate) navigator.vibrate(12);
   } else {
-    state.lives--;
-    showToast(pick(JOKES.bad) + ' −1 ♥', 'red');
-    if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-    if (state.lives <= 0) { updateUI(); updateMultiplier(); return endGame(); }
+    // 'good' — silent, score number animates
+    if (navigator.vibrate) navigator.vibrate(10);
   }
 
   state.layerIdx++;
@@ -650,12 +670,12 @@ function tap() {
 
   if (state.espressoActive > 0) state.espressoActive--;
 
-  applyPhase();
+  const phaseChanged = applyPhase();
   checkMilestones();
-  updateUI();
-  updateMultiplier(prevTier !== m.tier);
+  updateUI(quality === 'perfect');
+  updateMultiplier();
 
-  if (tutorialActive) advanceTutorialAction();
+  if (hintActive) advanceHint();
 }
 
 function completeSlice() {
@@ -666,18 +686,16 @@ function completeSlice() {
 
   state.slices++;
 
-  // Slice cm = sum of layer scores (already counted at tap time)
-  // Golden bonus: 50% extra slice score, applied here
   let bonus = 0;
   if (allPerfect) {
     const baseSliceCm = state.sliceLayers.reduce((s, l) => s + POINTS[l.quality] * multTier(state.perfectCombo).mult, 0);
     bonus = Math.round(baseSliceCm * 0.5);
     state.length += bonus;
-    showToast(pick(JOKES.golden) + ` +${bonus}cm`, 'golden-slice');
+    showToast(pick(JOKES.golden) + ` +${bonus}cm`, 'golden-slice', 3000);
     spawnParticles(window.innerWidth / 2, window.innerHeight - 280, ['🌟','✨','⭐','💫','🎉'], 8);
     if (navigator.vibrate) navigator.vibrate([20, 30, 20, 30, 60]);
   } else {
-    showToast('🍰 ' + pick(JOKES.slice), 'green');
+    showToast('🍰 ' + pick(JOKES.slice), 'green', 2200);
   }
 
   const slice = document.createElement('div');
@@ -705,15 +723,15 @@ function completeSlice() {
   state.sliceLayers = [];
   renderDots();
   updateTapButton();
-  updateUI();
+  updateUI(allPerfect);
 }
 
 function useEspresso() {
-  if (!state || state.espresso <= 0) return;
+  if (!state || state.espresso <= 0 || paused) return;
   state.espresso--; state.espressoActive = 4;
   $('esp-badge').textContent = state.espresso;
   if (state.espresso <= 0) $('espresso').classList.remove('show');
-  showToast('☕ Meter slowed for 4 layers', 'gold');
+  showToast('☕ Meter slowed for 4 layers', 'gold', 2200);
   if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
 }
 
@@ -744,8 +762,7 @@ function endGame() {
 
   const isNew = saveBest(state.length);
   const best = getBest();
-  $('best-value').textContent = fmt(best) + 'm';
-  $('best-row').innerHTML = `Best: <b id="best-value">${fmt(best)}m</b>` + (isNew ? '<span class="new-best">New PB!</span>' : '');
+  $('best-row').innerHTML = `Best: <b>${fmt(best)}m</b>` + (isNew ? '<span class="new-best">New PB!</span>' : '');
 
   $('gameover').classList.add('show');
 }
@@ -757,90 +774,39 @@ async function share() {
   const text = `🍰 ${m.toFixed(2)}m tiramisu at Chelsea Town Hall! ${m >= 300 ? '🏆 SMASHED 300m!' : m >= 275 ? '🏆 BROKE THE 275m RECORD!' : `(${(m/300*100).toFixed(0)}% of 300m)`} https://hugo-bramble.github.io/tiramisu-game/`;
   try {
     if (navigator.share) await navigator.share({ title: 'Chelsea Tiramisu', text });
-    else { await navigator.clipboard.writeText(text); showToast('Copied!'); }
+    else { await navigator.clipboard.writeText(text); showToast('Copied!', null, 1800); }
   } catch (e) {}
 }
 
-/* TUTORIAL */
-const TUT_STEPS = [
-  { title: 'One button', body: "You only have one button. It cycles through the recipe — savoiardi, mascarpone, cacao. Tap it now to drop your first layer.", hint: '👇 Tap the glowing button', target: '#tap-btn', cardPos: 'above', expectAction: true },
-  { title: 'Time the green', body: "When the marker hits the GREEN stripe, you score perfetto — most metres, builds your multiplier. Yellow is okay, red costs a heart.", hint: '👇 Tap when the marker is on green', target: '#meter-wrap', cardPos: 'above', expectAction: true },
-  { title: 'Build the multiplier', body: "Stack perfetti to grow your multiplier (×1 → ×8). Five perfetti in a row also earns an espresso. Beat 275m, push for 300m.", hint: '✨ Tap card to start', target: '#multiplier', cardPos: 'below', tapToContinue: true },
-];
-
-function startTutorial() {
-  tutorialActive = true; tutorialStep = 0;
-  $('tut-overlay').classList.add('show');
-  showTutStep();
+/* HINTS — simple just-in-time */
+function startHints() {
+  hintActive = true; hintStage = 0;
+  $('hint-pointer').classList.add('show');
+  $('hint-pointer').querySelector('.label').textContent = 'TAP HERE';
+  $('tap-btn').classList.add('tut-glow');
+  $('hint-meter').classList.add('show');
 }
 
-function showTutStep() {
-  const s = TUT_STEPS[tutorialStep];
-  $('tut-step').textContent = `Step ${tutorialStep + 1} / ${TUT_STEPS.length}`;
-  $('tut-title').textContent = s.title;
-  $('tut-body').textContent = s.body;
-  $('tut-hint').textContent = s.hint;
-  setTimeout(() => spotlight(s.target, s.cardPos), 50);
-  if (s.tapToContinue) {
-    $('tut-card').onclick = () => { tutorialStep++; if (tutorialStep < TUT_STEPS.length) showTutStep(); else endTutorial(); };
-  } else {
-    $('tut-card').onclick = null;
+function advanceHint() {
+  if (!hintActive) return;
+  hintStage++;
+  if (hintStage === 1) {
+    $('hint-pointer').querySelector('.label').textContent = 'TAP ON GREEN';
   }
+  if (hintStage >= 3) endHints();
 }
 
-function spotlight(selector, cardPos) {
-  const target = document.querySelector(selector);
-  if (!target) return;
-  const r = target.getBoundingClientRect();
-  const tap = document.querySelector('#tap').getBoundingClientRect();
-  const W = window.innerWidth, H = window.innerHeight;
-  const pad = 10;
-
-  const sp = $('spotlight');
-  sp.style.height = (tap.top - 6) + 'px';
-  sp.style.bottom = 'auto';
-
-  if (r.bottom < tap.top - 6) {
-    const x1 = Math.max(0, r.left - pad), y1 = Math.max(0, r.top - pad);
-    const x2 = Math.min(W, r.right + pad), y2 = Math.min(tap.top - 6, r.bottom + pad);
-    sp.style.clipPath = `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 ${y1}px, ${x1}px ${y1}px, ${x1}px ${y2}px, ${x2}px ${y2}px, ${x2}px ${y1}px, 0 ${y1}px)`;
-  } else {
-    sp.style.clipPath = 'none';
-  }
-
-  const ring = $('tut-ring');
-  ring.style.top = (r.top - pad) + 'px';
-  ring.style.left = (r.left - pad) + 'px';
-  ring.style.width = (r.width + 2 * pad) + 'px';
-  ring.style.height = (r.height + 2 * pad) + 'px';
-  ring.classList.add('show');
-
-  const card = $('tut-card');
-  if (cardPos === 'below') { card.style.top = (r.bottom + 14) + 'px'; card.style.bottom = 'auto'; }
-  else { card.style.bottom = (H - r.top + 14) + 'px'; card.style.top = 'auto'; }
-}
-
-function advanceTutorialAction() {
-  if (!tutorialActive) return;
-  if (TUT_STEPS[tutorialStep].expectAction) {
-    tutorialStep++;
-    if (tutorialStep < TUT_STEPS.length) showTutStep();
-    else endTutorial();
-  }
-}
-
-function endTutorial() {
-  tutorialActive = false;
-  $('tut-overlay').classList.remove('show');
-  $('tut-ring').classList.remove('show');
+function endHints() {
+  hintActive = false;
+  $('hint-pointer').classList.remove('show');
+  $('hint-meter').classList.remove('show');
+  $('tap-btn').classList.remove('tut-glow');
 }
 
 $('tap-btn').addEventListener('touchstart', e => { e.preventDefault(); tap(); }, { passive: false });
 $('tap-btn').addEventListener('click', e => { if (!('ontouchstart' in window)) tap(); });
 $('espresso').addEventListener('touchstart', e => { e.preventDefault(); useEspresso(); }, { passive: false });
 $('espresso').addEventListener('click', e => { if (!('ontouchstart' in window)) useEspresso(); });
-
-window.addEventListener('resize', () => { if (tutorialActive) { const s = TUT_STEPS[tutorialStep]; if (s) spotlight(s.target, s.cardPos); } });
 </script>
 </body>
 </html>
