@@ -739,7 +739,8 @@ function Game({ hintsOn, onEnd }) {
   const handleEventComplete = useCallback((kind, success, bonus) => {
     if (success) {
       statsRef.current.miniGamesWon += 1;
-      setLength(l => l + bonus);
+      const newLen = lengthRef.current + bonus;
+      setLength(newLen);
       sfx.golden();
       fireConfetti(0.8);
       const successMsg =
@@ -747,6 +748,31 @@ function Game({ hintsOn, onEnd }) {
         : kind === 'order' ? `👑 Order delivered · +${bonus}cm`
         : `⚡ Lightning · +${bonus}cm`;
       showToast(successMsg, 'goldenslice', 3000);
+      // Check phase + milestones immediately (don't wait for next timing tap)
+      const newPh = getPhase(newLen);
+      if (newPh.idx !== phaseIdxRef.current) {
+        setPhaseIdx(newPh.idx);
+        sfx.phase();
+      }
+      const meters = newLen / 100;
+      for (const ms of MILESTONES) {
+        if (meters >= ms.m && !milestonesShown.has(ms.m)) {
+          milestonesShown.add(ms.m);
+          if (ms.heart) setLives(l => Math.min(3, l + 1));
+          if (ms.garnish) setGarnishes(g => [...g, ms.garnish]);
+          if (ms.pause) {
+            if (ms.m === 275) sfx.record(); else sfx.golden();
+            fireBigConfetti();
+            // Fire pause AFTER mode switches back to timing
+            setTimeout(() => pauseFor({ emoji: ms.emoji, label: ms.label, title: ms.text, sub: ms.sub }), 600);
+          } else {
+            const msId = Date.now() + Math.random();
+            setSmallMilestone({ text: ms.text, sub: ms.sub, id: msId });
+            fireConfetti(0.6);
+            setTimeout(() => setSmallMilestone(m2 => (m2 && m2.id === msId) ? null : m2), 2400);
+          }
+        }
+      }
     } else {
       statsRef.current.miniGamesLost += 1;
       sfx.miss();
@@ -1141,6 +1167,7 @@ function TapButton({ type, onTap, pulse }) {
       whileTap={{ scale: 0.97 }}
       onTouchStart={(e) => { e.preventDefault(); onTap(); }}
       onClick={(e) => { if (!('ontouchstart' in window)) onTap(); }}
+      aria-label={`Tap to drop ${NAMES[type]} layer when marker is on green`}
       className={`flex-1 rounded-[22px] flex items-center justify-center gap-[14px] px-5 ${cls} shadow-[0_8px_22px_rgba(74,40,24,0.18)] ${pulse ? 'tap-pulse' : ''}`}
     >
       <span className="text-[38px] leading-none">{ICONS[type]}</span>
@@ -1162,6 +1189,7 @@ function EspressoButton({ count, onUse }) {
       whileTap={{ scale: 0.92 }}
       onTouchStart={(e) => { e.preventDefault(); onUse(); }}
       onClick={(e) => { if (!('ontouchstart' in window)) onUse(); }}
+      aria-label="Use espresso boost — slows the meter for 4 layers"
       className="absolute bottom-[152px] right-4 w-[46px] h-[46px] rounded-full bg-cocoa border-2 border-gold flex items-center justify-center text-[20px] z-[9]"
       style={{ boxShadow: '0 6px 18px rgba(201,123,26,0.4), 0 0 0 4px rgba(201,123,26,0.15)' }}
     >
