@@ -211,6 +211,9 @@ function Game({ hintsOn, onEnd }) {
   const [garnishes, setGarnishes] = useState([]);
   const [milestonesShown] = useState(() => new Set());
   const [builderAnim, setBuilderAnim] = useState(null); // 'complete' | 'golden' | null
+  const [mode, setMode] = useState('timing'); // 'timing' | 'memory' | 'order'
+  const [memoryRoundCount, setMemoryRoundCount] = useState(0);
+  const [orderRoundCount, setOrderRoundCount] = useState(0);
 
   // Non-rendered refs
   const markerRef = useRef({ pos: 0, dir: 1 });
@@ -226,6 +229,9 @@ function Game({ hintsOn, onEnd }) {
   const pausedRef = useRef(false);
   const hintStageRef = useRef(hintsOn ? 0 : -1);
   const sliceIdRef = useRef(0);
+  const modeRef = useRef('timing');
+  const sliceCountRef = useRef(0);
+  const eventCounterRef = useRef(0); // alternates memory ↔ order
 
   // Keep refs in sync
   useEffect(() => { lengthRef.current = length; }, [length]);
@@ -237,11 +243,14 @@ function Game({ hintsOn, onEnd }) {
   useEffect(() => { pausedRef.current = paused != null; }, [paused]);
   useEffect(() => { hintStageRef.current = hintStage; }, [hintStage]);
 
+  // Sync mode to ref
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+
   // Marker animation loop
   useEffect(() => {
     let raf;
     const loop = () => {
-      if (runningRef.current && !pausedRef.current) {
+      if (runningRef.current && !pausedRef.current && modeRef.current === 'timing') {
         const phase = PHASES[phaseIdxRef.current];
         let speed = phase.speed;
         if (espressoActiveRef.current > 0) speed *= 0.4;
@@ -487,47 +496,53 @@ function Game({ hintsOn, onEnd }) {
           Phase {phaseIdx + 1} <span className="text-gold ml-1">{phase.name}</span>
         </div>
 
-        {/* Toast */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div
-              key={toast.id}
-              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
-              className={
-                'absolute top-[92px] left-1/2 -translate-x-1/2 px-[22px] py-[12px] rounded-full font-extrabold text-[15px] shadow-large whitespace-nowrap max-w-[92vw] overflow-hidden text-ellipsis z-20 ' +
-                (toast.kind === 'red' ? 'bg-errorred text-white'
-                : toast.kind === 'green' ? 'bg-successgreen text-white'
-                : toast.kind === 'gold' ? 'bg-gold text-white'
-                : toast.kind === 'goldenslice' ? 'bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-white text-[16px] px-[26px] py-[13px] shadow-[0_8px_24px_rgba(251,191,36,0.55)]'
-                : 'bg-ink text-bg')
-              }
-            >
-              {toast.text}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Toast — wrapper handles centering, motion handles animation */}
+        <div className="absolute top-[92px] left-0 right-0 flex justify-center pointer-events-none z-20 px-4">
+          <AnimatePresence>
+            {toast && (
+              <motion.div
+                key={toast.id}
+                initial={{ opacity: 0, y: -12, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                className={
+                  'px-[22px] py-[12px] rounded-full font-extrabold text-[15px] shadow-large whitespace-nowrap max-w-full overflow-hidden text-ellipsis text-center ' +
+                  (toast.kind === 'red' ? 'bg-errorred text-white'
+                  : toast.kind === 'green' ? 'bg-successgreen text-white'
+                  : toast.kind === 'gold' ? 'bg-gold text-white'
+                  : toast.kind === 'goldenslice' ? 'bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-white text-[16px] px-[26px] py-[13px] shadow-[0_8px_24px_rgba(251,191,36,0.55)]'
+                  : 'bg-ink text-bg')
+                }
+              >
+                {toast.text}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Small milestone banner */}
-        <AnimatePresence>
-          {smallMilestone && (
-            <motion.div
-              key={smallMilestone.id}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-              className="absolute inset-0 z-[25] flex flex-col items-center justify-center pointer-events-none gap-2"
-            >
-              <div className="text-[38px] font-black text-gold tracking-tight" style={{ textShadow: '0 4px 16px rgba(201,123,26,0.4)' }}>
-                {smallMilestone.text}
-              </div>
-              <div className="text-[14px] font-semibold text-ink px-8 text-center">
-                {smallMilestone.sub}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div className="absolute inset-0 z-[25] flex flex-col items-center justify-center pointer-events-none gap-2 px-6">
+          <AnimatePresence>
+            {smallMilestone && (
+              <motion.div
+                key={smallMilestone.id}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+                className="flex flex-col items-center gap-2 text-center"
+              >
+                <div className="text-[38px] font-black text-gold tracking-tight" style={{ textShadow: '0 4px 16px rgba(201,123,26,0.4)' }}>
+                  {smallMilestone.text}
+                </div>
+                <div className="text-[14px] font-semibold text-ink">
+                  {smallMilestone.sub}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Plank + Trough */}
         <div className="absolute bottom-[244px] left-0 right-0 h-[5px] plank z-[2]" />
