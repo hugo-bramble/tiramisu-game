@@ -257,11 +257,15 @@ function Welcome({ onStart }) {
 
   const isGlobal = isGlobalLeaderboardConfigured();
   const board = isGlobal && globalBoard ? globalBoard : localBoard;
-  const next = () => setStep(s => {
-    const ns = s + 1;
-    if (ns >= PROFILE_STEP) { try { localStorage.setItem('tiramisu_seen_intro', '1'); } catch (e) {} }
-    return ns;
-  });
+  const next = () => {
+    // Unlock audio on every welcome interaction so iOS context is firmly bound
+    try { unlockAudio(); } catch (e) {}
+    setStep(s => {
+      const ns = s + 1;
+      if (ns >= PROFILE_STEP) { try { localStorage.setItem('tiramisu_seen_intro', '1'); } catch (e) {} }
+      return ns;
+    });
+  };
 
   // Cinematic intro scenes
   const SCENES = [

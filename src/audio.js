@@ -145,5 +145,25 @@ export const sfx = {
 };
 
 export function unlockAudio() {
-  try { getCtx(); } catch (e) {}
+  try {
+    const c = getCtx();
+    // iOS-friendly: schedule a near-silent priming tone so the audio
+    // session is firmly bound to this user gesture
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = 'sine';
+    o.frequency.value = 440;
+    o.connect(g);
+    g.connect(masterGain);
+    const now = c.currentTime;
+    g.gain.setValueAtTime(0.001, now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+    o.start(now);
+    o.stop(now + 0.06);
+    // Also try to resume in case it returned suspended
+    if (c.state === 'suspended') {
+      const p = c.resume();
+      if (p && p.then) p.then(() => {}).catch(() => {});
+    }
+  } catch (e) {}
 }
