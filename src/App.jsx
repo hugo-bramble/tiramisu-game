@@ -400,11 +400,7 @@ function Welcome({ onStart }) {
         transition={{ type: 'spring', damping: 22, stiffness: 280 }}
         className="relative bg-surface border border-[rgba(74,40,24,0.1)] rounded-[28px] p-7 pb-5 text-center max-w-sm w-full shadow-large"
       >
-        <motion.div
-          initial={{ rotate: -10, scale: 0 }} animate={{ rotate: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 250, damping: 14, delay: 0.1 }}
-          className="text-[56px] mb-1 leading-none"
-        >🍰</motion.div>
+        <div className="text-[56px] mb-1 leading-none select-none">🍰</div>
         <h2 className="text-[26px] font-black text-ink tracking-tight mb-1 leading-tight">How to play</h2>
         <div className="text-[11px] text-gold font-extrabold tracking-[2px] uppercase mb-5">Four things to know</div>
 
@@ -1578,10 +1574,11 @@ const LIGHTNING_FAIL = [
 ];
 
 function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
-  const [phase, setPhase] = useState('intro'); // intro | active | result
+  const [phase, setPhase] = useState('intro'); // intro | countdown | active | result
   const [showIdx, setShowIdx] = useState(-1);
   const [hits, setHits] = useState(0);
   const [result, setResult] = useState(null);
+  const [countdown, setCountdown] = useState(3);
   const isFirst = roundNum === 0;
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
@@ -1604,6 +1601,27 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
 
   useEffect(() => {
     if (phase === 'intro') sfx.phase();
+  }, [phase]);
+
+  // Countdown phase: 3, 2, 1, GO
+  useEffect(() => {
+    if (phase !== 'countdown') return;
+    setCountdown(3);
+    let n = 3;
+    sfx.tap();
+    const tick = setInterval(() => {
+      n -= 1;
+      if (n <= 0) {
+        clearInterval(tick);
+        setCountdown(0); // 'GO!' state
+        sfx.multUp(2);
+        setTimeout(() => setPhase('active'), 450);
+        return;
+      }
+      setCountdown(n);
+      sfx.tap();
+    }, 700);
+    return () => clearInterval(tick);
   }, [phase]);
 
   // Active phase: cycle through ingredients
@@ -1700,12 +1718,34 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
               <motion.button
                 initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 280 }}
                 whileTap={{ scale: 0.96 }}
-                onClick={() => setPhase('active')}
-                onTouchStart={(e) => { e.preventDefault(); setPhase('active'); }}
+                onClick={() => setPhase('countdown')}
+                onTouchStart={(e) => { e.preventDefault(); setPhase('countdown'); }}
                 className="px-9 py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider bg-cocoa text-mascarpone shadow-large active:scale-[0.97] transition-transform"
               >
                 Start lightning ⚡
               </motion.button>
+            </motion.div>
+          )}
+
+          {phase === 'countdown' && (
+            <motion.div
+              key="countdown"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <div className="text-[11px] uppercase tracking-[2px] font-bold text-ink3 mb-2">Get ready…</div>
+              <motion.div
+                key={'cd-' + countdown}
+                initial={{ scale: 1.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.6, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 18 }}
+                className="text-[140px] font-black text-gold leading-none tabular-nums"
+                style={{ textShadow: '0 4px 32px rgba(201,123,26,0.4)' }}
+              >
+                {countdown > 0 ? countdown : 'GO!'}
+              </motion.div>
+              <p className="text-[14px] text-ink2 font-medium mt-3">Match each flashing ingredient</p>
             </motion.div>
           )}
 
@@ -1717,7 +1757,7 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
             >
               <div className="text-center mt-2">
                 <div className="text-[10px] uppercase tracking-[2px] font-bold text-ink3 mb-1">Lightning · Round {roundNum + 1}</div>
-                <h2 className="text-[24px] font-black text-ink tracking-tight">Match it before it fades</h2>
+                <h2 className="text-[22px] font-black text-ink tracking-tight">Tap the matching button below</h2>
                 <p className="text-[12px] text-ink3 mt-1">Hit {hits} / {sequence.length}</p>
               </div>
 
