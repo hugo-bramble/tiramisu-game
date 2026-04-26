@@ -137,6 +137,19 @@ function saveBest(cm) {
   return false;
 }
 
+// Local "leaderboard" — top 10 runs with name + score + date
+function getUsername() { try { return localStorage.getItem('tiramisu_name') || ''; } catch (e) { return ''; } }
+function setUsernameLocal(n) { try { localStorage.setItem('tiramisu_name', String(n).slice(0, 20)); } catch (e) {} }
+function getLeaderboard() { try { return JSON.parse(localStorage.getItem('tiramisu_leaderboard') || '[]'); } catch (e) { return []; } }
+function addToLeaderboard(name, cm) {
+  try {
+    const board = getLeaderboard();
+    board.push({ name: (name || 'Anonymous').slice(0, 20), cm: Math.floor(cm), date: Date.now() });
+    board.sort((a, b) => b.cm - a.cm);
+    localStorage.setItem('tiramisu_leaderboard', JSON.stringify(board.slice(0, 10)));
+  } catch (e) {}
+}
+
 // ─── CONFETTI HELPERS ────────────────────────────────────────────────────────
 // Tiramisu-themed confetti palette
 const CONFETTI_COLORS = ['#c97b1a', '#f4c771', '#fbbf24', '#fffaeb', '#4a2818', '#deb887', '#e8c897'];
@@ -219,6 +232,9 @@ function Welcome({ onStart }) {
   const seenIntro = (() => { try { return localStorage.getItem('tiramisu_seen_intro') === '1'; } catch (e) { return false; } })();
   const [step, setStep] = useState(seenIntro ? 99 : 0); // 99 = jump straight to rules
   const personalBest = getBest();
+  const [name, setName] = useState(() => getUsername());
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const leaderboard = getLeaderboard();
   const next = () => setStep(s => {
     const ns = s + 1;
     // Mark intro as seen when user reaches the rules card
@@ -405,11 +421,23 @@ function Welcome({ onStart }) {
         <h2 className="text-[26px] font-black text-ink tracking-tight mb-1 leading-tight">How to play</h2>
         <div className="text-[11px] text-gold font-extrabold tracking-[2px] uppercase mb-3">Four things to know</div>
         {personalBest > 0 && (
-          <div className="text-[12px] text-ink2 font-semibold mb-4 px-3 py-1.5 bg-surface2 rounded-full inline-flex items-center gap-1.5">
+          <div className="text-[12px] text-ink2 font-semibold mb-3 px-3 py-1.5 bg-surface2 rounded-full inline-flex items-center gap-1.5">
             <span className="text-[10px] text-ink3 font-bold tracking-wider uppercase">Your best</span>
             <span className="text-ink font-extrabold">{fmt(personalBest)}m</span>
           </div>
         )}
+
+        {/* Username input */}
+        <div className="mb-4">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setUsernameLocal(e.target.value); }}
+            placeholder="Your name (for the leaderboard)"
+            maxLength={20}
+            className="w-full px-3 py-2 rounded-[10px] border border-[rgba(74,40,24,0.18)] bg-surface2 text-[13px] text-ink font-semibold text-center focus:outline-none focus:border-gold"
+          />
+        </div>
 
         <ul className="text-left mb-5 space-y-3">
           <HowItem icon="👆">Tap when the marker hits <b className="text-successgreen">green</b> for perfetto.</HowItem>
@@ -423,13 +451,58 @@ function Welcome({ onStart }) {
         <button onClick={() => onStart(false)} className="block w-full py-[10px] rounded-[14px] text-xs font-semibold tracking-wide bg-transparent text-ink2 border border-[rgba(74,40,24,0.18)] active:scale-[0.97] transition-transform">
           Skip — sono italiano
         </button>
-        {seenIntro && (
-          <button
-            onClick={() => setStep(0)}
-            className="block w-full pt-2 text-[10px] text-ink3 underline hover:text-ink2"
-          >Watch intro again</button>
-        )}
+        <div className="flex justify-center gap-4 pt-2">
+          {leaderboard.length > 0 && (
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="text-[10px] text-ink3 underline hover:text-ink2"
+            >🏆 Leaderboard</button>
+          )}
+          {seenIntro && (
+            <button
+              onClick={() => setStep(0)}
+              className="text-[10px] text-ink3 underline hover:text-ink2"
+            >Watch intro again</button>
+          )}
+        </div>
       </motion.div>
+
+      {/* Leaderboard panel */}
+      <AnimatePresence>
+        {showLeaderboard && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[60] flex items-center justify-center p-5 bg-[rgba(31,17,8,0.7)] backdrop-blur-md"
+            onClick={() => setShowLeaderboard(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-surface border border-[rgba(74,40,24,0.1)] rounded-[24px] p-6 max-w-sm w-full shadow-large max-h-[80vh] overflow-y-auto"
+            >
+              <div className="text-center mb-4">
+                <div className="text-[44px] mb-1 leading-none">🏆</div>
+                <h3 className="text-[22px] font-black text-ink tracking-tight">Top runs</h3>
+                <p className="text-[11px] text-ink3 font-bold tracking-wider uppercase mt-1">On this device</p>
+              </div>
+              <div className="space-y-1.5">
+                {leaderboard.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-3 py-2 px-3 rounded-[10px] bg-surface2">
+                    <div className={`w-6 text-[14px] font-extrabold ${i === 0 ? 'text-gold' : i < 3 ? 'text-ink' : 'text-ink3'}`}>{i + 1}</div>
+                    <div className="flex-1 text-[13px] font-bold text-ink truncate">{entry.name}</div>
+                    <div className="text-[14px] font-extrabold text-ink tabular-nums">{fmt(entry.cm)}m</div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowLeaderboard(false)}
+                className="block w-full mt-5 py-3 rounded-[12px] bg-cocoa text-mascarpone text-[13px] font-bold uppercase tracking-wider active:scale-[0.97]"
+              >Close</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -1283,6 +1356,8 @@ function GameOver({ stats, onRestart, onHome }) {
     const wasNew = saveBest(stats.length);
     setIsNew(wasNew);
     setBest(getBest());
+    // Also add to local leaderboard
+    addToLeaderboard(getUsername(), stats.length);
   }, [stats.length]);
 
   let title = 'Servizio finito', verdict = '', closingScene = '', stars = 0;
