@@ -1274,9 +1274,16 @@ function PauseModal({ info, onResume }) {
 // ─── GAME OVER ───────────────────────────────────────────────────────────────
 function GameOver({ stats, onRestart, onHome }) {
   const m = stats.length / 100;
-  const isNew = saveBest(stats.length);
-  const best = getBest();
   const [iapStage, setIapStage] = useState('offer'); // offer | processing | rugpull
+  const [isNew, setIsNew] = useState(false);
+  const [best, setBest] = useState(() => getBest());
+
+  // Save best ONCE on mount (idempotent across re-renders)
+  useEffect(() => {
+    const wasNew = saveBest(stats.length);
+    setIsNew(wasNew);
+    setBest(getBest());
+  }, [stats.length]);
 
   let title = 'Servizio finito', verdict = '', closingScene = '', stars = 0;
   if (m < 30) {
