@@ -1075,11 +1075,11 @@ function Game({ hintsOn, onEnd }) {
   return (
     <motion.div
       animate={{
-        x: shake > 0 ? [0, -8, 8, -5, 5, 0] : 0,
+        x: shake > 0 ? [0, -5, 5, -3, 3, 0] : 0,
         scale: punch > 0 ? [1, 1.035, 1] : 1,
       }}
       transition={{
-        x: { duration: 0.4 },
+        x: { duration: 0.35 },
         scale: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] },
       }}
       key={'fx-' + shake + '-' + punch}
