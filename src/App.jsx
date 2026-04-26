@@ -11,11 +11,11 @@ const POINTS = { perfect: 40, good: 18, bad: 0 };
 const GOAL_CM = 30000;
 
 const PHASES = [
-  { name: 'Apprentice', threshold: 0,     speed: 0.6,  green: 36, time: '5pm', bg: 'phase-1', sub: '5pm · The crowd is small but eager. Show them what you can do.' },
-  { name: 'Pasticcere', threshold: 800,   speed: 1.0,  green: 27, time: '6pm', bg: 'phase-2', sub: '6pm · The press arrive. Cameras flash on Cadogan Pier.' },
-  { name: 'Maestro',    threshold: 3000,  speed: 1.4,  green: 20, time: '7pm', bg: 'phase-3', sub: "7pm · Sloane Square is heaving. King's Road traffic stopped." },
-  { name: 'Virtuoso',   threshold: 9000,  speed: 1.85, green: 15, time: '8pm', bg: 'phase-4', sub: '8pm · The Italian Embassy is on the line. Vogue Italia just arrived.' },
-  { name: 'Leggenda',   threshold: 20000, speed: 2.4,  green: 11, time: '9pm', bg: 'phase-5', sub: '9pm · Silence. Only your hands move. The world watches.' },
+  { name: 'Apprentice', threshold: 0,     speed: 0.6,  green: 36, time: '1pm', bg: 'phase-1', sub: '1pm · The crowd is small but eager. Show them what you can do.' },
+  { name: 'Pasticcere', threshold: 800,   speed: 1.0,  green: 27, time: '2pm', bg: 'phase-2', sub: '2pm · The press arrive. Cameras flash on the King\'s Road.' },
+  { name: 'Maestro',    threshold: 3000,  speed: 1.4,  green: 20, time: '3pm', bg: 'phase-3', sub: "3pm · Sloane Square is heaving. Traffic is at a standstill." },
+  { name: 'Virtuoso',   threshold: 9000,  speed: 1.85, green: 15, time: '4pm', bg: 'phase-4', sub: '4pm · The Italian Embassy is on the line. Vogue Italia just arrived.' },
+  { name: 'Leggenda',   threshold: 20000, speed: 2.4,  green: 11, time: '5pm', bg: 'phase-5', sub: '5pm · Golden hour. Silence. Only your hands move. The world watches.' },
 ];
 
 const MILESTONES = [
@@ -214,9 +214,9 @@ function Welcome({ onStart }) {
   const SCENES = [
     {
       kind: 'setting',
-      eyebrow: 'Chelsea · 7pm',
-      title: 'Tonight',
-      body: "It's a Saturday in March. Cadogan Square is hushed. A crowd has gathered outside Chelsea Town Hall.",
+      eyebrow: 'Chelsea · Sunday',
+      title: 'This afternoon',
+      body: "It's a Sunday in April. Cadogan Square is in full bloom. A crowd has gathered outside Chelsea Town Hall, sipping flat whites.",
     },
     {
       kind: 'setting',
@@ -442,6 +442,8 @@ function Game({ hintsOn, onEnd }) {
   const [builderAnim, setBuilderAnim] = useState(null); // 'complete' | 'golden' | null
   const [storyBeatsShown] = useState(() => new Set());
   const [activeBeat, setActiveBeat] = useState(null);
+  // Aggregate stats for end-game display
+  const statsRef = useRef({ perfects: 0, maxCombo: 0, slices: 0, goldenSlices: 0, miniGamesWon: 0, miniGamesLost: 0 });
   const [mode, setMode] = useState('timing'); // 'timing' | 'memory' | 'order' | 'lightning'
   const [memoryRoundCount, setMemoryRoundCount] = useState(0);
   const [orderRoundCount, setOrderRoundCount] = useState(0);
@@ -563,11 +565,13 @@ function Game({ hintsOn, onEnd }) {
       setLives(newLives);
       if (newLives <= 0) {
         runningRef.current = false;
-        setTimeout(() => onEnd({ length: newLength, runId: Date.now() }), 700);
+        setTimeout(() => onEnd({ length: newLength, runId: Date.now(), stats: { ...statsRef.current } }), 700);
         // fall through to apply state below
       }
     } else if (quality === 'perfect') {
       sfx.perfect();
+      statsRef.current.perfects += 1;
+      if (newCombo > statsRef.current.maxCombo) statsRef.current.maxCombo = newCombo;
       // Multiplier tier-up celebration
       if (m.tier > prevTier && JOKES.multUp[m.mult]) {
         sfx.multUp(m.tier);
@@ -635,7 +639,9 @@ function Game({ hintsOn, onEnd }) {
       const allPerfect = newSliceLayers.every(l => l.quality === 'perfect');
       let bonus = 0;
       let finalLen = newLength;
+      statsRef.current.slices += 1;
       if (allPerfect) {
+        statsRef.current.goldenSlices += 1;
         const baseSliceCm = newSliceLayers.reduce((s, l) => s + POINTS[l.quality] * m.mult, 0);
         bonus = Math.round(baseSliceCm * 0.5);
         finalLen = newLength + bonus;
@@ -700,6 +706,7 @@ function Game({ hintsOn, onEnd }) {
 
   const handleEventComplete = useCallback((kind, success, bonus) => {
     if (success) {
+      statsRef.current.miniGamesWon += 1;
       setLength(l => l + bonus);
       sfx.golden();
       fireConfetti(0.8);
@@ -709,6 +716,7 @@ function Game({ hintsOn, onEnd }) {
         : `⚡ Lightning · +${bonus}cm`;
       showToast(successMsg, 'goldenslice', 3000);
     } else {
+      statsRef.current.miniGamesLost += 1;
       sfx.miss();
       // Penalty: lose 1 heart on event failure (raises stakes)
       const newLives = livesRef.current - 1;
@@ -722,7 +730,7 @@ function Game({ hintsOn, onEnd }) {
       showToast(failMsg, 'red', 2600);
       if (newLives <= 0) {
         runningRef.current = false;
-        setTimeout(() => onEnd({ length: lengthRef.current, runId: Date.now() }), 800);
+        setTimeout(() => onEnd({ length: lengthRef.current, runId: Date.now(), stats: { ...statsRef.current } }), 800);
       }
     }
     if (kind === 'memory') setMemoryRoundCount(c => c + 1);
@@ -916,8 +924,8 @@ function Game({ hintsOn, onEnd }) {
           </div>
         </div>
 
-        {/* Hint */}
-        {hintStage >= 0 && <HintLayer stage={hintStage} />}
+        {/* Hint — only during timing mode and tutorial */}
+        {hintStage >= 0 && mode === 'timing' && <HintLayer stage={hintStage} />}
 
         {/* Espresso */}
         <AnimatePresence>
@@ -1261,7 +1269,20 @@ function GameOver({ stats, onRestart, onHome }) {
         Best: <b className="text-ink font-extrabold">{fmt(best)}m</b>
         {isNew && <span className="text-gold font-extrabold px-2 py-1 bg-[rgba(201,123,26,0.12)] rounded-full text-[11px] tracking-wide uppercase">New PB!</span>}
       </div>
-      <p className="text-[14px] text-center text-ink2 leading-snug max-w-[340px] font-medium px-2">{verdict}</p>
+
+      {/* Run stats */}
+      {stats.stats && (
+        <div className="grid grid-cols-3 gap-2 max-w-[340px] w-full mt-1">
+          <StatTile label="Perfetti" value={stats.stats.perfects || 0} />
+          <StatTile label="Max combo" value={'×' + multTier(stats.stats.maxCombo || 0).mult} />
+          <StatTile label="Slices" value={stats.stats.slices || 0} />
+          <StatTile label="Golden" value={stats.stats.goldenSlices || 0} highlight={stats.stats.goldenSlices > 0} />
+          <StatTile label="Mini-wins" value={stats.stats.miniGamesWon || 0} />
+          <StatTile label="Mini-fails" value={stats.stats.miniGamesLost || 0} />
+        </div>
+      )}
+
+      <p className="text-[14px] text-center text-ink2 leading-snug max-w-[340px] font-medium px-2 mt-1">{verdict}</p>
       <p className="text-[12px] text-center text-gold italic font-bold leading-snug max-w-[320px] px-2 mt-1">{closingScene}</p>
       <button onClick={onRestart} className="px-9 py-[13px] rounded-[14px] text-sm font-bold bg-cocoa text-mascarpone active:scale-[0.97] transition-transform mt-3">
         Play again
@@ -1270,6 +1291,15 @@ function GameOver({ stats, onRestart, onHome }) {
         Share score
       </button>
     </motion.div>
+  );
+}
+
+function StatTile({ label, value, highlight }) {
+  return (
+    <div className={`rounded-[12px] px-3 py-2 text-center ${highlight ? 'bg-[rgba(201,123,26,0.12)] border border-[rgba(201,123,26,0.3)]' : 'bg-surface2'}`}>
+      <div className={`text-[16px] font-extrabold tabular-nums ${highlight ? 'text-gold' : 'text-ink'}`}>{value}</div>
+      <div className="text-[9px] uppercase tracking-wider font-bold text-ink3">{label}</div>
+    </div>
   );
 }
 
@@ -1547,8 +1577,15 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
   const hitWindow = Math.max(420, 900 - phaseIdx * 100 - roundNum * 30);
   const hitTimerRef = useRef(null);
   const aliveRef = useRef(true);
+  const phaseRef = useRef(phase);
+  const tapHandlerRef = useRef(null);
 
-  useEffect(() => () => { aliveRef.current = false; if (hitTimerRef.current) clearTimeout(hitTimerRef.current); }, []);
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => () => {
+    aliveRef.current = false;
+    tapHandlerRef.current = null;
+    if (hitTimerRef.current) clearTimeout(hitTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (phase === 'intro') sfx.phase();
@@ -1587,16 +1624,14 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
       i += 1;
     };
 
-    // Tap handler set on window; we use a ref for current index
     const handler = (type) => {
-      if (!aliveRef.current || phase !== 'active') return;
-      const currentIdx = i - 1; // current index that's shown
+      if (!aliveRef.current || phaseRef.current !== 'active') return;
+      const currentIdx = i - 1;
       if (currentIdx < 0 || currentIdx >= sequence.length) return;
       if (type === sequence[currentIdx]) {
         clearTimeout(hitTimerRef.current);
         sfx.perfect();
         setHits(h => h + 1);
-        // Brief gap, then advance
         setShowIdx(-1);
         setTimeout(advance, 130);
       } else {
@@ -1604,16 +1639,17 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
         sfx.miss();
         setResult('fail');
         setPhase('result');
+        tapHandlerRef.current = null;
         setTimeout(() => onComplete(false, 0), 1500);
       }
     };
-    aliveRef.tapHandler = handler;
+    tapHandlerRef.current = handler;
     setTimeout(advance, 350);
-    return () => { clearTimeout(hitTimerRef.current); };
+    return () => { clearTimeout(hitTimerRef.current); tapHandlerRef.current = null; };
   }, [phase, sequence, hitWindow, roundNum, phaseIdx, onComplete]);
 
   const onButtonTap = useCallback((type) => {
-    if (aliveRef.tapHandler) aliveRef.tapHandler(type);
+    if (tapHandlerRef.current) tapHandlerRef.current(type);
   }, []);
 
   return (
