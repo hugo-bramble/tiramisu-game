@@ -87,12 +87,21 @@ const JOKES = {
 
 // Ambient story beats — small overlays that flavor the game between phases
 const STORY_BEATS = [
-  { at: 200,  text: '📰 Evening Standard: "Tiramisu fever in SW3"' },
-  { at: 1500, text: '📺 Sky News cuts in: "Live from Chelsea Town Hall"' },
-  { at: 5000, text: '🎙️ BBC Radio 4: "They\'re approaching the record..."' },
-  { at: 12000, text: '📸 Vogue Italia: "Bellissimo, signor/signora!"' },
-  { at: 17000, text: '🇮🇹 Italian Embassy on the line' },
-  { at: 24000, text: '📞 Imola is watching. Nervously.' },
+  { at: 200,   text: '📰 Evening Standard: "Tiramisu fever in SW3"' },
+  { at: 800,   text: '👜 Sloane Mum: "Bigger than L\'Eliseo\'s!"' },
+  { at: 1500,  text: '📺 Sky News: "Live from Chelsea Town Hall"' },
+  { at: 3000,  text: '🎩 Cadogan Baron: "Where does it end?"' },
+  { at: 5000,  text: '🎙️ BBC Radio 4: "Approaching the record…"' },
+  { at: 7500,  text: '📸 Daily Mail: "Miracle in Chelsea"' },
+  { at: 10000, text: '👨‍🍳 Italian Embassy chef: "Mamma mia!"' },
+  { at: 12000, text: '📺 Vogue Italia: "Bellissimo, darling!"' },
+  { at: 15000, text: '🎨 Saatchi curator wants the recipe' },
+  { at: 17500, text: '🇮🇹 Italian Embassy on the line' },
+  { at: 20000, text: '🐎 King\'s Road Ranger: "Stop traffic!"' },
+  { at: 22000, text: '🎖️ Royal Pensioner: "Best night since \'52"' },
+  { at: 24000, text: '📞 Imola: "...this is humiliating"' },
+  { at: 26000, text: '👑 Cadogan Estate: "We\'ll fund the next 25m"' },
+  { at: 28000, text: '🏛️ Mayor of Chelsea is en route' },
 ];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -426,6 +435,7 @@ function Game({ hintsOn, onEnd }) {
   const [smallMilestone, setSmallMilestone] = useState(null);
   const [shake, setShake] = useState(0);
   const [flash, setFlash] = useState(0);
+  const [punch, setPunch] = useState(0);
   const [hintStage, setHintStage] = useState(hintsOn ? 0 : -1);
   const [garnishes, setGarnishes] = useState([]);
   const [milestonesShown] = useState(() => new Set());
@@ -632,6 +642,7 @@ function Game({ hintsOn, onEnd }) {
         setLength(finalLen);
         sfx.golden();
         fireConfetti(1);
+        setPunch(p => p + 1); // camera punch on golden
         showToast(pick(JOKES.golden) + ` +${bonus}cm`, 'goldenslice', 3000);
         setBuilderAnim('golden');
       } else {
@@ -731,9 +742,15 @@ function Game({ hintsOn, onEnd }) {
 
   return (
     <motion.div
-      animate={{ x: [0, -8, 8, -5, 5, 0] }}
-      transition={{ duration: shake > 0 ? 0.4 : 0 }}
-      key={'shake-' + shake}
+      animate={{
+        x: shake > 0 ? [0, -8, 8, -5, 5, 0] : 0,
+        scale: punch > 0 ? [1, 1.035, 1] : 1,
+      }}
+      transition={{
+        x: { duration: 0.4 },
+        scale: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] },
+      }}
+      key={'fx-' + shake + '-' + punch}
       className="absolute inset-0 flex flex-col"
     >
       {/* Header */}
