@@ -432,9 +432,10 @@ function Game({ hintsOn, onEnd }) {
   const [builderAnim, setBuilderAnim] = useState(null); // 'complete' | 'golden' | null
   const [storyBeatsShown] = useState(() => new Set());
   const [activeBeat, setActiveBeat] = useState(null);
-  const [mode, setMode] = useState('timing'); // 'timing' | 'memory' | 'order'
+  const [mode, setMode] = useState('timing'); // 'timing' | 'memory' | 'order' | 'lightning'
   const [memoryRoundCount, setMemoryRoundCount] = useState(0);
   const [orderRoundCount, setOrderRoundCount] = useState(0);
+  const [lightningRoundCount, setLightningRoundCount] = useState(0);
 
   // Non-rendered refs
   const markerRef = useRef({ pos: 0, dir: 1 });
@@ -467,15 +468,27 @@ function Game({ hintsOn, onEnd }) {
   // Sync mode to ref
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
-  // Marker animation loop
+  // Marker animation loop with phase-based modifiers for strategic depth
   useEffect(() => {
     let raf;
     const loop = () => {
       if (runningRef.current && !pausedRef.current && modeRef.current === 'timing') {
-        const phase = PHASES[phaseIdxRef.current];
+        const pIdx = phaseIdxRef.current;
+        const phase = PHASES[pIdx];
         let speed = phase.speed;
         if (espressoActiveRef.current > 0) speed *= 0.4;
         if (hintStageRef.current === 0) speed *= 0.55; // slow during initial hint
+
+        // Phase 4 (Virtuoso): occasional random direction reversal — keeps you alert
+        if (pIdx >= 3 && Math.random() < 0.003) {
+          markerRef.current.dir *= -1;
+        }
+        // Phase 5 (Leggenda): erratic speed variance
+        if (pIdx >= 4) {
+          const variance = 0.65 + Math.random() * 0.7; // 0.65–1.35x
+          speed *= variance;
+        }
+
         markerRef.current.pos += markerRef.current.dir * speed;
         if (markerRef.current.pos >= 100) { markerRef.current.pos = 100; markerRef.current.dir = -1; }
         if (markerRef.current.pos <= 0)   { markerRef.current.pos = 0;   markerRef.current.dir = 1; }
@@ -644,11 +657,12 @@ function Game({ hintsOn, onEnd }) {
 
       // Increment slice count and check for event round trigger
       sliceCountRef.current += 1;
-      // Every 3rd slice triggers an event round (alternates memory/order)
+      // Every 3rd slice triggers an event round (rotates: memory → order → lightning)
       if (sliceCountRef.current % 3 === 0 && sliceCountRef.current > 0) {
         setTimeout(() => {
           eventCounterRef.current += 1;
-          const eventType = eventCounterRef.current % 2 === 1 ? 'memory' : 'order';
+          const types = ['memory', 'order', 'lightning'];
+          const eventType = types[(eventCounterRef.current - 1) % types.length];
           setMode(eventType);
         }, 1100);
       }
@@ -678,7 +692,10 @@ function Game({ hintsOn, onEnd }) {
       setLength(l => l + bonus);
       sfx.golden();
       fireConfetti(0.8);
-      const successMsg = kind === 'memory' ? `🧠 Memoria perfetta · +${bonus}cm` : `👑 Order delivered · +${bonus}cm`;
+      const successMsg =
+        kind === 'memory' ? `🧠 Memoria perfetta · +${bonus}cm`
+        : kind === 'order' ? `👑 Order delivered · +${bonus}cm`
+        : `⚡ Lightning · +${bonus}cm`;
       showToast(successMsg, 'goldenslice', 3000);
     } else {
       sfx.miss();
@@ -687,7 +704,10 @@ function Game({ hintsOn, onEnd }) {
       setLives(newLives);
       setShake(s => s + 1);
       setFlash(f => f + 1);
-      const failMsg = kind === 'memory' ? 'Memory failed · −1 ♥' : 'Order rejected · −1 ♥';
+      const failMsg =
+        kind === 'memory' ? 'Memory failed · −1 ♥'
+        : kind === 'order' ? 'Order rejected · −1 ♥'
+        : 'Lightning missed · −1 ♥';
       showToast(failMsg, 'red', 2600);
       if (newLives <= 0) {
         runningRef.current = false;
@@ -695,7 +715,8 @@ function Game({ hintsOn, onEnd }) {
       }
     }
     if (kind === 'memory') setMemoryRoundCount(c => c + 1);
-    else setOrderRoundCount(c => c + 1);
+    else if (kind === 'order') setOrderRoundCount(c => c + 1);
+    else if (kind === 'lightning') setLightningRoundCount(c => c + 1);
     // Reset marker to center for clean restart of timing mode
     markerRef.current.pos = 50;
     markerRef.current.dir = 1;
@@ -908,6 +929,14 @@ function Game({ hintsOn, onEnd }) {
             roundNum={orderRoundCount}
             phaseIdx={phaseIdx}
             onComplete={(success, bonus) => handleEventComplete('order', success, bonus)}
+          />
+        )}
+        {mode === 'lightning' && (
+          <LightningRound
+            key={'lit-' + lightningRoundCount}
+            roundNum={lightningRoundCount}
+            phaseIdx={phaseIdx}
+            onComplete={(success, bonus) => handleEventComplete('lightning', success, bonus)}
           />
         )}
       </AnimatePresence>
@@ -1462,6 +1491,235 @@ function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
               </h2>
               <p className="text-[14px] text-ink2 font-medium">
                 {result === 'success' ? `+${250 * sequence.length + roundNum * 100}cm bonus` : 'No bonus this time'}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── LIGHTNING ROUND (Pure reflexes — match flashing ingredients) ─────────────
+const LIGHTNING_LINES = [
+  '⚡ Lightning fast!',
+  '⚡ Bellissimo reflexes!',
+  '⚡ Like a Sloane Square cabbie!',
+  '⚡ Vogue cover speed!',
+  '⚡ Faster than King\'s Road traffic!',
+];
+const LIGHTNING_FAIL = [
+  'Too slow, caro!',
+  'Reflexes need espresso',
+  'Rusty, like a Cadogan gate',
+  'Madonna mia, focus!',
+];
+
+function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
+  const [phase, setPhase] = useState('intro'); // intro | active | result
+  const [showIdx, setShowIdx] = useState(-1);
+  const [hits, setHits] = useState(0);
+  const [result, setResult] = useState(null);
+  const isFirst = roundNum === 0;
+  const sequence = useMemo(() => {
+    const types = ['lady', 'cream', 'cocoa'];
+    const len = Math.min(5 + Math.floor(roundNum / 2) + phaseIdx, 9);
+    return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
+  }, [roundNum, phaseIdx]);
+  // Hit window shrinks with phase: 850ms early, 450ms late
+  const hitWindow = Math.max(420, 900 - phaseIdx * 100 - roundNum * 30);
+  const hitTimerRef = useRef(null);
+  const aliveRef = useRef(true);
+
+  useEffect(() => () => { aliveRef.current = false; if (hitTimerRef.current) clearTimeout(hitTimerRef.current); }, []);
+
+  useEffect(() => {
+    if (phase === 'intro') sfx.phase();
+  }, [phase]);
+
+  // Active phase: cycle through ingredients
+  useEffect(() => {
+    if (phase !== 'active') return;
+    let i = 0;
+    setShowIdx(-1);
+    const advance = () => {
+      if (!aliveRef.current) return;
+      if (i >= sequence.length) {
+        // All done!
+        setShowIdx(-1);
+        sfx.golden();
+        setResult('success');
+        setPhase('result');
+        const bonus = 200 * sequence.length + 500 + roundNum * 80 + phaseIdx * 100;
+        setTimeout(() => onComplete(true, bonus), 1700);
+        return;
+      }
+      const seqIdx = i;
+      const seqType = sequence[seqIdx];
+      setShowIdx(seqIdx);
+      const tIdx = seqType === 'lady' ? 0 : seqType === 'cream' ? 1 : 2;
+      sfx.memShow(tIdx);
+      hitTimerRef.current = setTimeout(() => {
+        if (!aliveRef.current) return;
+        // Timeout — miss
+        sfx.miss();
+        setResult('fail');
+        setPhase('result');
+        setTimeout(() => onComplete(false, 0), 1500);
+      }, hitWindow);
+      i += 1;
+    };
+
+    // Tap handler set on window; we use a ref for current index
+    const handler = (type) => {
+      if (!aliveRef.current || phase !== 'active') return;
+      const currentIdx = i - 1; // current index that's shown
+      if (currentIdx < 0 || currentIdx >= sequence.length) return;
+      if (type === sequence[currentIdx]) {
+        clearTimeout(hitTimerRef.current);
+        sfx.perfect();
+        setHits(h => h + 1);
+        // Brief gap, then advance
+        setShowIdx(-1);
+        setTimeout(advance, 130);
+      } else {
+        clearTimeout(hitTimerRef.current);
+        sfx.miss();
+        setResult('fail');
+        setPhase('result');
+        setTimeout(() => onComplete(false, 0), 1500);
+      }
+    };
+    aliveRef.tapHandler = handler;
+    setTimeout(advance, 350);
+    return () => { clearTimeout(hitTimerRef.current); };
+  }, [phase, sequence, hitWindow, roundNum, phaseIdx, onComplete]);
+
+  const onButtonTap = useCallback((type) => {
+    if (aliveRef.tapHandler) aliveRef.tapHandler(type);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="absolute inset-0 z-30 bg-bg flex flex-col"
+    >
+      <div className="flex-1 flex flex-col items-center justify-between px-6 pt-10 pb-8">
+        <AnimatePresence mode="wait">
+          {phase === 'intro' && (
+            <motion.div
+              key="intro"
+              initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <motion.div
+                animate={{ rotate: [-5, 5, -5] }}
+                transition={{ duration: 0.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-[88px] mb-3 leading-none"
+              >⚡</motion.div>
+              <div className="text-[11px] uppercase tracking-[2px] font-extrabold text-gold mb-2">{isFirst ? 'Mini-game · New!' : 'Lightning Round'}</div>
+              <h2 className="text-[34px] font-black text-ink tracking-tight mb-3 leading-tight">Lightning</h2>
+              <p className="text-[15px] text-ink2 max-w-[300px] leading-relaxed mb-2 px-1">
+                {isFirst
+                  ? "Ingredients will flash one at a time. Tap the matching button before it disappears. No second chances."
+                  : "Match each flashing ingredient. Be fast — windows close quickly."}
+              </p>
+              <p className="text-[12px] text-ink3 max-w-[280px] leading-relaxed mb-7 px-2">
+                <b className="text-gold">All-or-nothing</b> · Big bonus on success
+              </p>
+              <motion.button
+                initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 280 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setPhase('active')}
+                onTouchStart={(e) => { e.preventDefault(); setPhase('active'); }}
+                className="px-9 py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider bg-cocoa text-mascarpone shadow-large active:scale-[0.97] transition-transform"
+              >
+                Start lightning ⚡
+              </motion.button>
+            </motion.div>
+          )}
+
+          {phase === 'active' && (
+            <motion.div
+              key="active"
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex-1 w-full flex flex-col items-center justify-between"
+            >
+              <div className="text-center mt-2">
+                <div className="text-[10px] uppercase tracking-[2px] font-bold text-ink3 mb-1">Lightning · Round {roundNum + 1}</div>
+                <h2 className="text-[24px] font-black text-ink tracking-tight">Match it before it fades</h2>
+                <p className="text-[12px] text-ink3 mt-1">Hit {hits} / {sequence.length}</p>
+              </div>
+
+              {/* Flashing target ingredient */}
+              <div className="flex-1 flex items-center justify-center w-full">
+                <AnimatePresence mode="wait">
+                  {showIdx >= 0 && (
+                    <motion.div
+                      key={showIdx}
+                      initial={{ scale: 0, rotate: -10, opacity: 0 }}
+                      animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                      exit={{ scale: 1.2, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+                      className={`w-[140px] h-[140px] rounded-[28px] flex items-center justify-center text-[80px] btn-${sequence[showIdx]} shadow-large`}
+                      style={{ boxShadow: '0 0 0 6px rgba(201,123,26,0.25), 0 12px 40px rgba(74,40,24,0.3)' }}
+                    >
+                      {ICONS[sequence[showIdx]]}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Hit progress dots */}
+              <div className="flex gap-2 mb-4">
+                {sequence.map((_, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      scale: i < hits ? 1.2 : 1,
+                      backgroundColor: i < hits ? '#10b981' : i === hits ? '#c97b1a' : 'rgba(74,40,24,0.18)',
+                    }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 18 }}
+                    className="w-3 h-3 rounded-full"
+                  />
+                ))}
+              </div>
+
+              {/* Buttons */}
+              <div className="grid grid-cols-3 gap-3 w-full max-w-md">
+                {['lady', 'cream', 'cocoa'].map(type => (
+                  <motion.button
+                    key={type}
+                    whileTap={{ scale: 0.94 }}
+                    onTouchStart={(e) => { e.preventDefault(); onButtonTap(type); }}
+                    onClick={(e) => { if (!('ontouchstart' in window)) onButtonTap(type); }}
+                    className={`btn-${type} h-[100px] rounded-[20px] flex flex-col items-center justify-center font-bold shadow-[0_8px_22px_rgba(74,40,24,0.18)]`}
+                  >
+                    <span className="text-[36px] leading-none">{ICONS[type]}</span>
+                    <span className="text-[12px] mt-1 font-bold tracking-tight">{NAMES[type]}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {phase === 'result' && (
+            <motion.div
+              key="result"
+              initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <div className="text-[80px] mb-3 leading-none">{result === 'success' ? '⚡' : '💤'}</div>
+              <h2 className="text-[28px] font-black text-ink tracking-tight mb-2 px-4 leading-tight">
+                {result === 'success' ? pick(LIGHTNING_LINES) : pick(LIGHTNING_FAIL)}
+              </h2>
+              <p className="text-[14px] text-ink2 font-medium">
+                {result === 'success'
+                  ? `+${200 * sequence.length + 500 + roundNum * 80 + phaseIdx * 100}cm bonus`
+                  : `${hits} of ${sequence.length} caught — no bonus`}
               </p>
             </motion.div>
           )}
