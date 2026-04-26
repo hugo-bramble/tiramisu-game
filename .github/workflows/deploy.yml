@@ -26,6 +26,7 @@ jobs:
       - run: npm run build
         env:
           VITE_FIRESTORE_PROJECT_ID: ${{ secrets.VITE_FIRESTORE_PROJECT_ID }}
+          VITE_FIRESTORE_API_KEY: ${{ secrets.VITE_FIRESTORE_API_KEY }}
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -6,10 +6,9 @@
 // 4. Paste it in PROJECT_ID below (or set VITE_FIRESTORE_PROJECT_ID in .env)
 // 5. Commit & push — leaderboard goes live globally
 //
-// Test-mode rules allow anyone to read/write. For production you'd
-// want hardened rules + a Cloudflare Worker proxy or App Check token.
-const PROJECT_ID = 'tiramisu-game';
-const API_KEY = 'AIzaSyCRm0PzMgpbjGVpdbND3nEQspFiY6B8Q3o';
+// API key + project ID injected via GitHub secrets at build time (not committed)
+const PROJECT_ID = import.meta.env.VITE_FIRESTORE_PROJECT_ID || '';
+const API_KEY = import.meta.env.VITE_FIRESTORE_API_KEY || '';
 const COLLECTION = 'leaderboard';
 
 const isConfigured = () => !!PROJECT_ID && !!API_KEY;
