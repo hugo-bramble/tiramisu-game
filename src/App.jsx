@@ -30,84 +30,67 @@ const MILESTONES = [
 ];
 
 const JOKES = {
+  // Bad taps — relatable cultural etiquette violations
   bad: [
-    'Sloppy! Cadogan disapproves',
-    'Madonna mia, what a mess',
-    'Ma che fai?! Disastro!',
-    "Even Pret's tiramisu beat that",
-    'The pensioners gasp in horror',
-    'Peter Jones returns it',
-    "Worse than King's Road traffic",
-    'Sloane mum tuts loudly',
-    'A disaster, darling',
-    "That's not Bluebird-tier",
-    "The Saatchi wouldn't hang it",
-    'Fulham would still take it',
-    'Madonna santa, riprova!',
-    'Imola laughs from afar',
-    'Like a Sloane Square parking ticket',
-    'Even M&S Food does better',
-    'Roma is texting Imola already',
-    "The Cadogan Estate looks the other way",
-    'Vogue Italia is off the line',
-    'Sloppy work — pensioners deserve better',
+    'Cream in carbonara — porca miseria',
+    'Cappuccino at 4pm. Italians weep.',
+    'Pineapple. On a pizza.',
+    'Snapped the spaghetti in half.',
+    'Ordered a flat white in Naples.',
+    'Reheated the espresso. Twice.',
+    'Tutted at someone on the Tube.',
+    'Microwaved the focaccia.',
+    'Stood on the left of the escalator.',
+    "Called bolognese 'spag bol' to a Roman.",
+    'Asked for "Italian dressing".',
+    'Drank red wine. With fish.',
+    'Made eye contact on the Underground.',
+    'Said "ciao" once, then walked off.',
+    'Put milk in your espresso.',
+    'Skipped tea after dinner.',
   ],
+  // Slice complete — relatable approval, not name-dropping
   slice: [
-    'Una fetta perfetta!',
-    'Slice complete, darling',
-    'Sloane mums approve',
-    'The Bluebird applauds',
-    "Fit for the King's Road",
-    'Buonissimo, old bean',
-    'Cadogan estate impressed',
-    'Posher than Granger & Co',
-    'Squisito, chef!',
-    'The Royal Hospital cheers',
-    "Better than L'Eliseo's",
-    'A slice for the ages',
-    "World's End is buzzing",
-    'Eataly approves',
-    "The Daily Mail can't fault it",
-    'Even the Italian Embassy calls',
-    "Da Bocca di Lupo level",
-    'Royal-Hospital-Road-tier',
-    'Not bad for SW3',
-    'Sloane Rangers nod',
-    "Joe & The Juice has nothing on this",
-    'Tatler files a feature',
-    'Even John Lewis is jealous',
+    'A proper slice.',
+    'Steady as Big Ben.',
+    'Marks & Sparks-tier.',
+    'Pret-acceptable.',
+    'Mary Berry pauses to watch.',
+    'Solid, like a Sunday roast.',
+    'Crisper than a Greggs sausage roll.',
+    "A nonna's polite head-tilt.",
+    'Stiff upper lip approval.',
+    "An M&S Christmas advert in slice form.",
+    'Tasteful, like a navy wool jumper.',
+    'Sunday-roast respectable.',
   ],
+  // Golden slice — properly good (5 perfetti in a row)
   golden: [
-    '🌟 Vogue Italia approves!',
-    '🌟 La Stampa front page!',
-    '🌟 Saatchi takes a photo!',
-    '🌟 Eataly wants the recipe!',
-    '🌟 King Charles applauds!',
-    '🌟 La Repubblica calls!',
-    "🌟 The Pope's blessing arrives",
-    '🌟 Chelsea Pensioners salute',
-    '🌟 The Mayor declares a holiday',
-    '🌟 Stamford Bridge erupts',
-    '🌟 Roma weeps with envy',
-    '🌟 Italian schoolchildren applaud',
-    '🌟 BBC1 cuts to live coverage',
-    '🌟 The Daily Mail crowns a hero',
+    '🌟 Sophia Loren-tier elegance',
+    '🌟 Federer cross-court winner',
+    '🌟 Mary Berry stops baking to clap',
+    "🌟 A nonna says nothing — high praise",
+    "🌟 Federer's backhand, but tiramisu",
+    '🌟 Worth a Sunday Times feature',
+    "🌟 The Queen would have smiled",
+    '🌟 Pope-blesses-the-recipe tier',
+    '🌟 Roma 1983 — that good',
   ],
   multUp: {
-    2: ['×2 — On a roll!', '×2 multiplier!', '×2 — Sloane Square notices', '×2 — Just warming up', '×2 — The chatter starts'],
-    3: ['×3 — Magnifico!', '×3 — Cadogan applauds', '×3 — Saatchi takes notes', '×3 — Sky News on the line', '×3 — Tatler is interested'],
-    5: ['×5 — Bellissimo combo!', '×5 — Vogue Italia is here', '×5 — Eataly wants in', "×5 — King's Rd is yours", '×5 — Cameras zoom'],
-    8: ['×8 LEGGENDARIO!', '×8 — Vogue is calling!', '×8 — Roma is jealous', '×8 — The Pope is watching', '×8 — Italian PM tweets'],
+    2: ['×2 — Pret-tier', '×2 — Sunday-roast steady'],
+    3: ['×3 — Mary Berry approves', '×3 — Stiff upper lip respect'],
+    5: ['×5 — Federer in his prime', "×5 — A nonna almost smiles"],
+    8: ['×8 — SOPHIA LOREN-TIER', '×8 — The Queen would have smiled', '×8 — Roma in their prime'],
   },
 };
 
 // Ambient story beats — sparse, sprinkled across the game arc
 const STORY_BEATS = [
-  { at: 1500,  text: '📺 Sky News: "Live from Chelsea Town Hall"' },
-  { at: 5000,  text: '🎙️ BBC Radio 4: "Approaching the record…"' },
-  { at: 12000, text: '📸 Vogue Italia: "Bellissimo, darling!"' },
-  { at: 20000, text: '🐎 King\'s Road traffic stopped' },
-  { at: 26000, text: '🇮🇹 Imola: "...this is humiliating"' },
+  { at: 1500,  text: '📺 Sky News cuts in mid-Sportsday' },
+  { at: 5000,  text: "🎙️ BBC Radio 4 interrupts The Archers" },
+  { at: 12000, text: '📰 Daily Mail: "Posh dessert breaks records"' },
+  { at: 20000, text: "🐎 King's Road at standstill" },
+  { at: 26000, text: '📞 Imola group chat: "we have a problem"' },
 ];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -1754,20 +1737,20 @@ function StatTile({ label, value, highlight }) {
 
 // ─── MEMORY ROUND ────────────────────────────────────────────────────────────
 const MEMORY_SUCCESS = [
-  'Una memoria perfetta!',
-  'Bellissima — like Sloane clockwork!',
-  "Magnifico — Chelsea's finest mind!",
-  'Perfetto — Saatchi-worthy memory!',
-  'Bravissimo — Cadogan calls!',
-  'Squisito! Vogue takes notes',
-  'Memoria leggendaria, darling!',
+  'Memoria perfetta!',
+  "Sharper than a Sloane mum at the school gate",
+  'Federer on his best day',
+  "A nonna's photographic memory",
+  "Bocca di Lupo's chef nods",
+  "Cleaner than Loro Piana cashmere",
+  'Mary Berry pauses to applaud',
 ];
 const MEMORY_FAIL = [
-  'Madonna mia, that\'s not it',
-  "Forgetful, like King's Road parking",
-  'Concentrate, caro!',
-  'Even my goldfish remembers better',
-  'Disastro! Riprova next time',
+  "Foggy as a November morning",
+  "Lost in Selfridges Food Hall",
+  "Couldn't find your way out of Sloane Square",
+  "Madonna mia — riprova",
+  "Slower than a Greggs queue at 11am",
 ];
 
 function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
@@ -1999,17 +1982,17 @@ function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
 
 // ─── LIGHTNING ROUND (Pure reflexes — match flashing ingredients) ─────────────
 const LIGHTNING_LINES = [
-  '⚡ Lightning fast!',
-  '⚡ Bellissimo reflexes!',
-  '⚡ Like a Sloane Square cabbie!',
-  '⚡ Vogue cover speed!',
-  '⚡ Faster than King\'s Road traffic!',
+  "⚡ Reflexes of a London cabbie",
+  "⚡ Faster than an Audi at Sloane lights",
+  "⚡ Federer-Nadal speed",
+  "⚡ Quick as a Brompton commute",
+  "⚡ Sharper than Royal Hospital cadets",
 ];
 const LIGHTNING_FAIL = [
-  'Too slow, caro!',
-  'Reflexes need espresso',
-  'Rusty, like a Cadogan gate',
-  'Madonna mia, focus!',
+  "Slower than the District Line on Sundays",
+  "Reflexes of a Greggs queue at 11am",
+  "Sleepy as a November afternoon",
+  "Needs an espresso. Right now.",
 ];
 
 function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
@@ -2288,27 +2271,29 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
 
 // ─── ORDER ROUND (Customer recipe match) ─────────────────────────────────────
 const CUSTOMERS = [
-  { name: 'Sloane Mum',       portrait: '👜', quote: "I'll have what we had at L'Eliseo, dear" },
-  { name: 'Cadogan Baron',    portrait: '🎩', quote: "Nothing too sweet — I'm watching my figure" },
-  { name: 'Saatchi Curator',  portrait: '🎨', quote: "I want something… provocative" },
-  { name: 'Italian Nonna',    portrait: '👵', quote: "Authentic, like Roma. Don't disappoint." },
-  { name: 'Royal Pensioner',  portrait: '🎖️', quote: "The usual, son. Just like '52." },
-  { name: "King's Rd Ranger", portrait: '🐎', quote: "Quick — I'm parked at Sloane Square" },
-  { name: 'Fulham Dad',       portrait: '🧑‍💼', quote: "Whatever's on the menu, mate" },
+  { name: 'Sloane Mum',       portrait: '👜', quote: "Same as we had at L'Eliseo, but lighter, darling" },
+  { name: 'Cadogan Baron',    portrait: '🎩', quote: "Just like at White's. And quickly." },
+  { name: 'Saatchi Curator',  portrait: '🎨', quote: "Something… deconstructed" },
+  { name: 'Italian Nonna',    portrait: '👵', quote: "Like my mother made. No shortcuts." },
+  { name: 'Royal Pensioner',  portrait: '🎖️', quote: "The usual, son. Same since '52." },
+  { name: "K-Road Driver",    portrait: '🚗', quote: "Quick — I'm double-parked outside Peter Jones" },
+  { name: 'Daily Mail Critic', portrait: '📰', quote: "Make it gluten-free. Caps lock review otherwise." },
 ];
 
 const ORDER_SUCCESS = [
-  'Order delivered, darling!',
-  'Customer is delighted!',
-  'Five stars on Tripadvisor!',
-  'Will tell all the Sloane mums!',
-  'Bellissimo, exactly as ordered!',
+  '5 stars on Tripadvisor',
+  'They left a 20% tip',
+  'Bocca di Lupo would hire you',
+  "The Sloane mum mafia approves",
+  "They Instagrammed every angle",
+  'Word reaches Mary Berry',
 ];
 const ORDER_FAIL = [
-  'Customer rejects it, disastro!',
-  'They wanted something else, ma!',
-  'Wrong order — no tip today',
-  'Madonna mia, riprova!',
+  'They march straight to Padella',
+  '1 star — caps lock review incoming',
+  'Daily Mail comments section reels',
+  "The Sloane mum mafia is gossiping",
+  'No tip. Worse — a Tatler complaint',
 ];
 
 function OrderRound({ roundNum, phaseIdx = 0, onComplete }) {
