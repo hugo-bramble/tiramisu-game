@@ -198,48 +198,200 @@ function FlagStripe() {
 
 // ─── WELCOME ─────────────────────────────────────────────────────────────────
 function Welcome({ onStart }) {
+  const [step, setStep] = useState(0);
+  const next = () => setStep(s => s + 1);
+
+  // Cinematic intro scenes
+  const SCENES = [
+    {
+      kind: 'setting',
+      eyebrow: 'Chelsea · 7pm',
+      title: 'Tonight',
+      body: "It's a Saturday in March. Cadogan Square is hushed. A crowd has gathered outside Chelsea Town Hall.",
+    },
+    {
+      kind: 'setting',
+      eyebrow: 'The Record',
+      title: '275 metres',
+      body: 'Set by Imola in 2019. The longest tiramisu ever assembled. Italians have held the record for thirty years.',
+    },
+    {
+      kind: 'setting',
+      eyebrow: 'Your Mission',
+      title: '300 metres',
+      body: 'Beat the Italians at their own game. Build a tiramisu longer than King\'s Road has ever seen. Cameras roll.',
+    },
+    {
+      kind: 'cast',
+      eyebrow: 'Meet your mentor',
+      portrait: '👵',
+      name: 'Nonna Maria',
+      quote: '"I have been making tiramisu since 1952. Don\'t embarrass me, caro."',
+      caption: 'Will judge you. Silently. Constantly.',
+    },
+    {
+      kind: 'cast',
+      eyebrow: 'Meet the locals',
+      portraits: ['👜', '🎩', '🎨', '🐎', '🎖️'],
+      name: 'Chelsea',
+      quote: '"We\'ve seen better. We\'ve seen worse."',
+      caption: "Sloane mums, Cadogan barons, Saatchi curators — they'll order. You'll deliver. Or won't.",
+    },
+  ];
+
+  if (step < SCENES.length) {
+    const s = SCENES[step];
+    return (
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_50%_30%,#3a2a4e_0%,#1a1638_75%)] overflow-hidden cursor-pointer"
+        onClick={next}
+        onTouchStart={(e) => { e.preventDefault(); next(); }}
+      >
+        {/* Stars */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          backgroundImage:
+            'radial-gradient(circle at 12% 18%, rgba(255,255,255,0.55) 1px, transparent 2px),' +
+            'radial-gradient(circle at 78% 12%, rgba(255,255,255,0.4) 1px, transparent 2px),' +
+            'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.5) 0.8px, transparent 2px),' +
+            'radial-gradient(circle at 92% 84%, rgba(255,255,255,0.35) 0.8px, transparent 2px),' +
+            'radial-gradient(circle at 18% 64%, rgba(255,255,255,0.4) 0.8px, transparent 2px),' +
+            'radial-gradient(circle at 58% 92%, rgba(255,255,255,0.5) 0.8px, transparent 2px),' +
+            'radial-gradient(circle at 42% 38%, rgba(255,255,255,0.4) 0.8px, transparent 2px)',
+        }} />
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="relative max-w-[380px] w-full text-center"
+          >
+            <div className="text-[11px] text-gold font-extrabold tracking-[3px] uppercase mb-4">{s.eyebrow}</div>
+
+            {s.kind === 'setting' && (
+              <>
+                <motion.h1
+                  initial={{ scale: 0.92 }} animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 220, damping: 18, delay: 0.15 }}
+                  className="text-white text-[56px] font-black tracking-tight mb-4 leading-none"
+                  style={{ textShadow: '0 4px 24px rgba(201,123,26,0.35)' }}
+                >
+                  {s.title}
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }}
+                  className="text-[15px] text-white/85 leading-relaxed font-medium italic max-w-[320px] mx-auto"
+                >
+                  {s.body}
+                </motion.p>
+              </>
+            )}
+
+            {s.kind === 'cast' && s.portrait && (
+              <>
+                <motion.div
+                  initial={{ scale: 0, rotate: -10 }}
+                  animate={{ scale: 1, rotate: 0, y: [0, -6, 0] }}
+                  transition={{ scale: { type: 'spring', stiffness: 250, damping: 14, delay: 0.1 }, y: { duration: 2.4, repeat: Infinity, ease: 'easeInOut' } }}
+                  className="text-[120px] leading-none mb-3"
+                >{s.portrait}</motion.div>
+                <h1 className="text-white text-[36px] font-black tracking-tight mb-2 leading-tight">{s.name}</h1>
+                <motion.p
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }}
+                  className="text-[15px] text-white/85 italic font-medium max-w-[320px] mx-auto mb-3"
+                >
+                  {s.quote}
+                </motion.p>
+                <p className="text-[12px] text-gold/85 font-bold tracking-wide max-w-[300px] mx-auto">{s.caption}</p>
+              </>
+            )}
+
+            {s.kind === 'cast' && s.portraits && (
+              <>
+                <motion.div className="flex justify-center gap-3 mb-4 flex-wrap">
+                  {s.portraits.map((p, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ scale: 0, y: 20 }}
+                      animate={{ scale: 1, y: 0 }}
+                      transition={{ delay: 0.1 + i * 0.1, type: 'spring', stiffness: 280, damping: 18 }}
+                      className="text-[56px] leading-none"
+                    >{p}</motion.div>
+                  ))}
+                </motion.div>
+                <h1 className="text-white text-[36px] font-black tracking-tight mb-2 leading-tight">{s.name}</h1>
+                <motion.p
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7, duration: 0.6 }}
+                  className="text-[15px] text-white/85 italic font-medium max-w-[320px] mx-auto mb-3"
+                >
+                  {s.quote}
+                </motion.p>
+                <p className="text-[12px] text-gold/85 font-bold tracking-wide max-w-[320px] mx-auto">{s.caption}</p>
+              </>
+            )}
+
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4, duration: 0.6 }}
+              className="absolute left-0 right-0 -bottom-20 text-center"
+            >
+              <div className="text-[11px] uppercase tracking-[2px] text-white/50 font-bold">Tap to continue</div>
+              <motion.div
+                animate={{ y: [0, 6, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-white/60 text-[14px] mt-1"
+              >▼</motion.div>
+            </motion.div>
+
+            {/* Step dots */}
+            <div className="absolute -top-12 left-0 right-0 flex justify-center gap-2">
+              {SCENES.map((_, i) => (
+                <div key={i} className={`h-[6px] rounded-full transition-all ${i === step ? 'w-6 bg-gold' : i < step ? 'w-[6px] bg-white/60' : 'w-[6px] bg-white/20'}`} />
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
+    );
+  }
+
+  // Final card with rules + Begin
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="absolute inset-0 z-50 flex items-center justify-center p-5 bg-[radial-gradient(ellipse_at_50%_30%,#3a2a4e_0%,#1a1638_75%)] backdrop-blur-xl overflow-hidden"
+      className="absolute inset-0 z-50 flex items-center justify-center p-5 bg-[radial-gradient(ellipse_at_50%_30%,#3a2a4e_0%,#1a1638_75%)] overflow-hidden"
     >
-      {/* Stars */}
       <div className="absolute inset-0 pointer-events-none" style={{
         backgroundImage:
-          'radial-gradient(circle at 12% 18%, rgba(255,255,255,0.55) 1px, transparent 2px),' +
+          'radial-gradient(circle at 12% 18%, rgba(255,255,255,0.5) 1px, transparent 2px),' +
           'radial-gradient(circle at 78% 12%, rgba(255,255,255,0.4) 1px, transparent 2px),' +
-          'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.5) 0.8px, transparent 2px),' +
-          'radial-gradient(circle at 92% 84%, rgba(255,255,255,0.35) 0.8px, transparent 2px),' +
+          'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.45) 0.8px, transparent 2px),' +
           'radial-gradient(circle at 18% 64%, rgba(255,255,255,0.4) 0.8px, transparent 2px),' +
-          'radial-gradient(circle at 58% 92%, rgba(255,255,255,0.5) 0.8px, transparent 2px)',
+          'radial-gradient(circle at 58% 92%, rgba(255,255,255,0.4) 0.8px, transparent 2px)',
       }} />
-
       <motion.div
         initial={{ scale: 0.92, opacity: 0, y: 14 }} animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', damping: 22, stiffness: 280 }}
         className="relative bg-surface border border-[rgba(74,40,24,0.1)] rounded-[28px] p-7 pb-5 text-center max-w-sm w-full shadow-large"
       >
         <motion.div
-          initial={{ rotate: -10, scale: 0 }}
-          animate={{ rotate: 0, scale: 1 }}
+          initial={{ rotate: -10, scale: 0 }} animate={{ rotate: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 250, damping: 14, delay: 0.1 }}
           className="text-[56px] mb-1 leading-none"
         >🍰</motion.div>
-        <h2 className="text-[30px] font-black text-ink tracking-tight mb-1 leading-none">Chelsea Tiramisu</h2>
-        <div className="text-[11px] text-gold font-extrabold tracking-[2px] uppercase mb-4">A World Record Attempt</div>
-
-        <p className="text-[14px] text-ink leading-relaxed mb-5 px-1 italic">
-          Tonight, at <b className="not-italic text-gold font-bold">Chelsea Town Hall</b>, you'll attempt the impossible: a <b className="not-italic text-gold font-bold">300-metre tiramisu</b>. The current record is 275m. Cameras roll. The world watches.
-        </p>
+        <h2 className="text-[26px] font-black text-ink tracking-tight mb-1 leading-tight">How to play</h2>
+        <div className="text-[11px] text-gold font-extrabold tracking-[2px] uppercase mb-5">Four things to know</div>
 
         <ul className="text-left mb-5 space-y-3">
           <HowItem icon="👆">Tap when the marker hits <b className="text-successgreen">green</b> for perfetto.</HowItem>
-          <HowItem icon="🔥">Stack perfetti to grow your <b className="text-gold">×8 multiplier</b>. One miss resets it.</HowItem>
-          <HowItem icon="🧠">Bonus rounds (memory · customer order) appear between slices.</HowItem>
-          <HowItem icon="🏆">Beat 275m to break the record. Push for 300m for glory.</HowItem>
+          <HowItem icon="🔥">Stack perfetti to grow your <b className="text-gold">×8 multiplier</b>. A miss resets it.</HowItem>
+          <HowItem icon="☕">Every 5 perfetti earns an <b className="text-gold">espresso</b>. Tap it to slow the meter for 4 layers — save it for late game.</HowItem>
+          <HowItem icon="🧠">Mini-rounds (memory · customer order) appear between slices. <b className="text-errorred">Fail = −1 heart.</b></HowItem>
         </ul>
         <button onClick={() => onStart(true)} className="block w-full py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform">
-          Show me how
+          Begin (with hint)
         </button>
         <button onClick={() => onStart(false)} className="block w-full py-[10px] rounded-[14px] text-xs font-semibold tracking-wide bg-transparent text-ink2 border border-[rgba(74,40,24,0.18)] active:scale-[0.97] transition-transform">
           Skip — sono italiano
@@ -530,8 +682,17 @@ function Game({ hintsOn, onEnd }) {
       showToast(successMsg, 'goldenslice', 3000);
     } else {
       sfx.miss();
-      const failMsg = kind === 'memory' ? 'Memory failed — no bonus' : 'Order rejected — no bonus';
-      showToast(failMsg, 'red', 2400);
+      // Penalty: lose 1 heart on event failure (raises stakes)
+      const newLives = livesRef.current - 1;
+      setLives(newLives);
+      setShake(s => s + 1);
+      setFlash(f => f + 1);
+      const failMsg = kind === 'memory' ? 'Memory failed · −1 ♥' : 'Order rejected · −1 ♥';
+      showToast(failMsg, 'red', 2600);
+      if (newLives <= 0) {
+        runningRef.current = false;
+        setTimeout(() => onEnd({ length: lengthRef.current, runId: Date.now() }), 800);
+      }
     }
     if (kind === 'memory') setMemoryRoundCount(c => c + 1);
     else setOrderRoundCount(c => c + 1);
@@ -539,7 +700,7 @@ function Game({ hintsOn, onEnd }) {
     markerRef.current.pos = 50;
     markerRef.current.dir = 1;
     setMode('timing');
-  }, [showToast]);
+  }, [showToast, onEnd]);
 
   const phase = PHASES[phaseIdx];
   const m = multTier(combo);
@@ -737,6 +898,7 @@ function Game({ hintsOn, onEnd }) {
           <MemoryRound
             key={'mem-' + memoryRoundCount}
             roundNum={memoryRoundCount}
+            phaseIdx={phaseIdx}
             onComplete={(success, bonus) => handleEventComplete('memory', success, bonus)}
           />
         )}
@@ -744,6 +906,7 @@ function Game({ hintsOn, onEnd }) {
           <OrderRound
             key={'ord-' + orderRoundCount}
             roundNum={orderRoundCount}
+            phaseIdx={phaseIdx}
             onComplete={(success, bonus) => handleEventComplete('order', success, bonus)}
           />
         )}
@@ -1082,17 +1245,22 @@ const MEMORY_FAIL = [
   'Disastro! Riprova next time',
 ];
 
-function MemoryRound({ roundNum, onComplete }) {
+function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
   const [phase, setPhase] = useState('intro'); // intro | preview | showing | prompt | input | result
   const [showIdx, setShowIdx] = useState(-1);
   const [inputIdx, setInputIdx] = useState(0);
+  const [tappedTypes, setTappedTypes] = useState([]); // record of what user tapped
   const [result, setResult] = useState(null);
   const isFirst = roundNum === 0;
+  // Difficulty scales with both round count AND phase (later phases = much harder)
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
-    const len = Math.min(3 + Math.floor(roundNum / 2), 6);
+    const len = Math.min(4 + roundNum + phaseIdx, 10);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
-  }, [roundNum]);
+  }, [roundNum, phaseIdx]);
+  // Display speed accelerates aggressively in late phases
+  const showDuration = Math.max(220, 540 - roundNum * 30 - phaseIdx * 50);
+  const gapDuration = Math.max(80, 200 - roundNum * 10 - phaseIdx * 25);
 
   // Intro: play sound on entry, user taps "Watch" to continue
   useEffect(() => {
@@ -1127,12 +1295,12 @@ function MemoryRound({ roundNum, onComplete }) {
       setTimeout(() => {
         if (!alive) return;
         setShowIdx(-1);
-        setTimeout(tick, 220);
-      }, 600);
+        setTimeout(tick, gapDuration);
+      }, showDuration);
     };
     setTimeout(tick, 400);
     return () => { alive = false; };
-  }, [phase, sequence]);
+  }, [phase, sequence, showDuration, gapDuration]);
 
   // Prompt → input after brief beat
   useEffect(() => {
@@ -1147,11 +1315,13 @@ function MemoryRound({ roundNum, onComplete }) {
       sfx.perfect();
       const newIdx = inputIdx + 1;
       setInputIdx(newIdx);
+      setTappedTypes(t => [...t, type]);
       if (newIdx >= sequence.length) {
         sfx.golden();
         setResult('success');
         setPhase('result');
-        const bonus = 200 * sequence.length + roundNum * 50;
+        // Bonus scales with sequence length × round difficulty
+        const bonus = 250 * sequence.length + roundNum * 100;
         setTimeout(() => onComplete(true, bonus), 1700);
       }
     } else {
@@ -1291,7 +1461,7 @@ function MemoryRound({ roundNum, onComplete }) {
                 {result === 'success' ? pick(MEMORY_SUCCESS) : pick(MEMORY_FAIL)}
               </h2>
               <p className="text-[14px] text-ink2 font-medium">
-                {result === 'success' ? `+${200 * sequence.length + roundNum * 50}cm bonus` : 'No bonus this time'}
+                {result === 'success' ? `+${250 * sequence.length + roundNum * 100}cm bonus` : 'No bonus this time'}
               </p>
             </motion.div>
           )}
@@ -1326,23 +1496,40 @@ const ORDER_FAIL = [
   'Madonna mia, riprova!',
 ];
 
-function OrderRound({ roundNum, onComplete }) {
-  const [phase, setPhase] = useState('intro'); // intro | input | result
+function OrderRound({ roundNum, phaseIdx = 0, onComplete }) {
+  const [phase, setPhase] = useState('intro'); // intro | reveal | input | result
   const [inputIdx, setInputIdx] = useState(0);
   const [result, setResult] = useState(null);
   const [shake, setShake] = useState(0);
+  const [revealCountdown, setRevealCountdown] = useState(0);
   const isFirst = roundNum === 0;
 
   const customer = useMemo(() => CUSTOMERS[roundNum % CUSTOMERS.length], [roundNum]);
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
-    const len = Math.min(4 + Math.floor(roundNum / 2), 7);
+    const len = Math.min(4 + Math.floor(roundNum / 2) + phaseIdx, 8);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
-  }, [roundNum]);
+  }, [roundNum, phaseIdx]);
+  // Reveal duration shrinks with phase: 4s early game, 2s by Leggenda
+  const revealMs = Math.max(2000, 4500 - phaseIdx * 600);
 
   useEffect(() => {
     if (phase === 'intro') sfx.phase();
   }, [phase]);
+
+  // Reveal phase: show order for revealMs with countdown
+  useEffect(() => {
+    if (phase !== 'reveal') return;
+    setRevealCountdown(Math.ceil(revealMs / 1000));
+    let n = Math.ceil(revealMs / 1000);
+    const tick = setInterval(() => {
+      n -= 1;
+      if (n <= 0) { clearInterval(tick); setPhase('input'); return; }
+      setRevealCountdown(n);
+      sfx.tap();
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [phase, revealMs]);
 
   const handleTap = useCallback((type) => {
     if (phase !== 'input') return;
@@ -1397,12 +1584,56 @@ function OrderRound({ roundNum, onComplete }) {
               <motion.button
                 initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 280 }}
                 whileTap={{ scale: 0.96 }}
-                onClick={() => setPhase('input')}
-                onTouchStart={(e) => { e.preventDefault(); setPhase('input'); }}
+                onClick={() => setPhase('reveal')}
+                onTouchStart={(e) => { e.preventDefault(); setPhase('reveal'); }}
                 className="px-9 py-[14px] rounded-[14px] text-sm font-extrabold uppercase tracking-wider bg-cocoa text-mascarpone shadow-large active:scale-[0.97] transition-transform"
               >
                 See the order →
               </motion.button>
+            </motion.div>
+          )}
+
+          {phase === 'reveal' && (
+            <motion.div
+              key="reveal"
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="flex-1 w-full flex flex-col items-center justify-between"
+            >
+              <div className="text-center mt-2">
+                <div className="text-[11px] uppercase tracking-[2px] font-bold text-gold mb-2">Memorise the order</div>
+                <h2 className="text-[26px] font-black text-ink tracking-tight">Memorise it!</h2>
+                <p className="text-[12px] text-ink2 mt-1">It will disappear in <b className="text-gold tabular-nums">{revealCountdown}s</b></p>
+              </div>
+
+              {/* Order display — visible during reveal */}
+              <div className="flex flex-col items-center gap-3 my-6 max-w-full">
+                <div className="text-[10px] uppercase tracking-[2px] font-bold text-ink3">{customer.name}'s Order</div>
+                <div className="flex gap-2 justify-center flex-wrap max-w-[340px]">
+                  {sequence.map((t, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: i * 0.08, type: 'spring', stiffness: 300 }}
+                      className={`relative w-12 h-12 rounded-[12px] flex flex-col items-center justify-center text-[24px] btn-${t} shadow-soft`}
+                    >
+                      {ICONS[t]}
+                      <span className="absolute -bottom-[18px] text-[10px] text-ink3 font-bold tabular-nums">{i + 1}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Countdown ring */}
+              <motion.div
+                key={'cd-' + revealCountdown}
+                initial={{ scale: 1.2, opacity: 0.5 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="text-[64px] font-black text-gold tabular-nums leading-none"
+              >
+                {revealCountdown}
+              </motion.div>
             </motion.div>
           )}
 
@@ -1419,30 +1650,29 @@ function OrderRound({ roundNum, onComplete }) {
               <div className="flex items-center gap-3 bg-surface px-4 py-3 rounded-[18px] shadow-soft border border-[rgba(74,40,24,0.08)]">
                 <div className="text-[28px] leading-none">{customer.portrait}</div>
                 <div className="text-left">
-                  <div className="text-[10px] uppercase tracking-wider font-bold text-ink3">Order from</div>
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-ink3">Order from memory</div>
                   <div className="text-[15px] font-extrabold text-ink tracking-tight">{customer.name}</div>
                 </div>
               </div>
 
-              {/* Recipe to follow — visual ingredient chain */}
+              {/* Position dots — show only what's been tapped (correct), rest as "?" */}
               <div className="text-center my-3">
-                <div className="text-[10px] uppercase tracking-[2px] font-bold text-ink3 mb-3">Order · {inputIdx} / {sequence.length}</div>
+                <div className="text-[10px] uppercase tracking-[2px] font-bold text-ink3 mb-3">Position {inputIdx + 1} of {sequence.length}</div>
                 <div className="flex gap-2 justify-center flex-wrap max-w-[340px]">
                   {sequence.map((t, i) => (
                     <motion.div
                       key={i}
                       animate={{
-                        scale: i === inputIdx ? 1.18 : i < inputIdx ? 0.92 : 1,
-                        opacity: i < inputIdx ? 0.45 : 1,
+                        scale: i === inputIdx ? 1.2 : 1,
                       }}
                       transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-                      className={`relative w-10 h-10 rounded-[10px] flex items-center justify-center text-[20px] btn-${t}`}
+                      className={`relative w-10 h-10 rounded-[10px] flex items-center justify-center text-[18px] font-black ${i < inputIdx ? `btn-${t}` : i === inputIdx ? 'bg-gold text-white' : 'bg-surface2 text-ink3'}`}
                       style={{
-                        boxShadow: i === inputIdx ? '0 0 0 3px rgba(201,123,26,0.7)' : 'none',
+                        boxShadow: i === inputIdx ? '0 0 0 3px rgba(201,123,26,0.45)' : 'none',
                       }}
                     >
-                      {ICONS[t]}
-                      {i < inputIdx && <div className="absolute inset-0 flex items-center justify-center text-[16px] text-successgreen font-black">✓</div>}
+                      {i < inputIdx ? ICONS[t] : i === inputIdx ? '?' : '·'}
+                      {i < inputIdx && <div className="absolute -top-[6px] -right-[5px] text-[12px] text-successgreen font-black bg-white rounded-full w-4 h-4 flex items-center justify-center shadow-soft">✓</div>}
                     </motion.div>
                   ))}
                 </div>
