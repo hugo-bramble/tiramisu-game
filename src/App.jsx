@@ -458,10 +458,13 @@ function Welcome({ onStart }) {
               type="text"
               value={name}
               onChange={(e) => { setName(e.target.value); setUsernameLocal(e.target.value); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && team) next(); }}
               placeholder="🏆  Your name"
               maxLength={20}
-              autoFocus
-              className="w-full px-3 py-3 mb-3 rounded-[12px] border border-[rgba(74,40,24,0.15)] bg-surface2 text-[15px] text-ink font-bold text-center focus:outline-none focus:border-gold"
+              autoFocus={!name}
+              autoComplete="off"
+              autoCapitalize="words"
+              className="w-full px-3 py-3 mb-3 rounded-[12px] border-2 border-[rgba(74,40,24,0.15)] bg-surface2 text-[15px] text-ink font-bold text-center focus:outline-none focus:border-gold"
             />
             <div className="grid grid-cols-2 gap-2 mb-5">
               <button
@@ -809,7 +812,7 @@ function Game({ hintsOn, onEnd }) {
         // First-time explainer: clearer message about what to do with it
         if (!seenEspressoRef.current) {
           seenEspressoRef.current = true;
-          showToast('☕ Espresso earned! Tap the cup → to slow the meter', 'gold', 4500);
+          showToast('☕ Espresso! Tap cup at right to slow the meter', 'gold', 4500);
         } else {
           showToast('☕ Espresso earned!', 'gold', 2400);
         }
@@ -960,6 +963,15 @@ function Game({ hintsOn, onEnd }) {
         : kind === 'order' ? `👑 Order delivered · +${bonus}cm`
         : `⚡ Lightning · +${bonus}cm`;
       showToast(successMsg, 'goldenslice', 3000);
+
+      // Check leaderboard overtakes from event bonus too
+      while (leaderboardTargetsRef.current.length > 0 && newLen >= leaderboardTargetsRef.current[0].cm) {
+        const passed = leaderboardTargetsRef.current.shift();
+        const flag = passed.team === 'GB' ? '🇬🇧 ' : passed.team === 'IT' ? '🇮🇹 ' : '';
+        setTimeout(() => showToast(`📈 Passed ${flag}${passed.name}!`, 'goldenslice', 2800), 800);
+        setChasingTarget(leaderboardTargetsRef.current[0] || null);
+      }
+
       // Check phase + milestones immediately (don't wait for next timing tap)
       const newPh = getPhase(newLen);
       if (newPh.idx !== phaseIdxRef.current) {
