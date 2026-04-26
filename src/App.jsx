@@ -410,6 +410,17 @@ function Game({ hintsOn, onEnd }) {
         setLayerIdx(0);
         setBuilderAnim(null);
       }, 700);
+
+      // Increment slice count and check for event round trigger
+      sliceCountRef.current += 1;
+      // Every 3rd slice triggers an event round (alternates memory/order)
+      if (sliceCountRef.current % 3 === 0 && sliceCountRef.current > 0) {
+        setTimeout(() => {
+          eventCounterRef.current += 1;
+          const eventType = eventCounterRef.current % 2 === 1 ? 'memory' : 'order';
+          setMode(eventType);
+        }, 1100);
+      }
     } else {
       setLayerIdx(newLayerIdx);
     }
@@ -430,6 +441,26 @@ function Game({ hintsOn, onEnd }) {
   }, [espresso, showToast]);
 
   const handleResume = useCallback(() => setPaused(null), []);
+
+  const handleEventComplete = useCallback((kind, success, bonus) => {
+    if (success) {
+      setLength(l => l + bonus);
+      sfx.golden();
+      fireConfetti(0.8);
+      const successMsg = kind === 'memory' ? `🧠 Memoria perfetta · +${bonus}cm` : `👑 Order delivered · +${bonus}cm`;
+      showToast(successMsg, 'goldenslice', 3000);
+    } else {
+      sfx.miss();
+      const failMsg = kind === 'memory' ? 'Memory failed — no bonus' : 'Order rejected — no bonus';
+      showToast(failMsg, 'red', 2400);
+    }
+    if (kind === 'memory') setMemoryRoundCount(c => c + 1);
+    else setOrderRoundCount(c => c + 1);
+    // Reset marker to center for clean restart of timing mode
+    markerRef.current.pos = 50;
+    markerRef.current.dir = 1;
+    setMode('timing');
+  }, [showToast]);
 
   const phase = PHASES[phaseIdx];
   const m = multTier(combo);
@@ -599,6 +630,24 @@ function Game({ hintsOn, onEnd }) {
           <TapButton type={RECIPE[layerIdx]} onTap={handleTap} pulse={hintStage >= 0} />
         </div>
       </div>
+
+      {/* Event rounds — full takeover */}
+      <AnimatePresence>
+        {mode === 'memory' && (
+          <MemoryRound
+            key={'mem-' + memoryRoundCount}
+            roundNum={memoryRoundCount}
+            onComplete={(success, bonus) => handleEventComplete('memory', success, bonus)}
+          />
+        )}
+        {mode === 'order' && (
+          <OrderRound
+            key={'ord-' + orderRoundCount}
+            roundNum={orderRoundCount}
+            onComplete={(success, bonus) => handleEventComplete('order', success, bonus)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Pause modal */}
       <AnimatePresence>
@@ -867,6 +916,360 @@ function GameOver({ stats, onRestart, onHome }) {
       <button onClick={share} className="px-6 py-[11px] rounded-[14px] text-[12px] font-semibold bg-transparent text-ink2 border border-[rgba(74,40,24,0.18)] active:scale-[0.97] transition-transform">
         Share score
       </button>
+    </motion.div>
+  );
+}
+
+// ─── MEMORY ROUND ────────────────────────────────────────────────────────────
+const MEMORY_SUCCESS = [
+  'Una memoria perfetta!',
+  'Bellissima — like Sloane clockwork!',
+  "Magnifico — Chelsea's finest mind!",
+  'Perfetto — Saatchi-worthy memory!',
+  'Bravissimo — Cadogan calls!',
+  'Squisito! Vogue takes notes',
+  'Memoria leggendaria, darling!',
+];
+const MEMORY_FAIL = [
+  'Madonna mia, that\'s not it',
+  "Forgetful, like King's Road parking",
+  'Concentrate, caro!',
+  'Even my goldfish remembers better',
+  'Disastro! Riprova next time',
+];
+
+function MemoryRound({ roundNum, onComplete }) {
+  const [phase, setPhase] = useState('intro'); // intro | showing | input | result
+  const [showIdx, setShowIdx] = useState(-1);
+  const [inputIdx, setInputIdx] = useState(0);
+  const [result, setResult] = useState(null);
+  const sequence = useMemo(() => {
+    const types = ['lady', 'cream', 'cocoa'];
+    const len = Math.min(3 + Math.floor(roundNum / 2), 6);
+    return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
+  }, [roundNum]);
+
+  // Intro → Showing
+  useEffect(() => {
+    if (phase !== 'intro') return;
+    sfx.phase();
+    const t = setTimeout(() => setPhase('showing'), 1500);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  // Showing sequence
+  useEffect(() => {
+    if (phase !== 'showing') return;
+    let alive = true;
+    let i = 0;
+    const tick = () => {
+      if (!alive) return;
+      if (i >= sequence.length) {
+        setShowIdx(-1);
+        setTimeout(() => alive && setPhase('input'), 350);
+        return;
+      }
+      setShowIdx(i);
+      sfx.tap();
+      i += 1;
+      setTimeout(() => {
+        if (!alive) return;
+        setShowIdx(-1);
+        setTimeout(tick, 220);
+      }, 580);
+    };
+    setTimeout(tick, 450);
+    return () => { alive = false; };
+  }, [phase, sequence]);
+
+  const handleTap = useCallback((type) => {
+    if (phase !== 'input') return;
+    if (type === sequence[inputIdx]) {
+      sfx.perfect();
+      const newIdx = inputIdx + 1;
+      setInputIdx(newIdx);
+      if (newIdx >= sequence.length) {
+        sfx.golden();
+        setResult('success');
+        setPhase('result');
+        const bonus = 200 * sequence.length + roundNum * 50;
+        setTimeout(() => onComplete(true, bonus), 1700);
+      }
+    } else {
+      sfx.miss();
+      setResult('fail');
+      setPhase('result');
+      setTimeout(() => onComplete(false, 0), 1500);
+    }
+  }, [phase, inputIdx, sequence, roundNum, onComplete]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="absolute inset-0 z-30 bg-bg flex flex-col"
+    >
+      {/* Header strip retains length/lives via parent — this is the round content */}
+      <div className="flex-1 flex flex-col items-center justify-between px-6 pt-10 pb-8">
+        <AnimatePresence mode="wait">
+          {phase === 'intro' && (
+            <motion.div
+              key="intro"
+              initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <div className="text-[80px] mb-3 leading-none pulse-emoji">🧠</div>
+              <div className="text-[11px] uppercase tracking-[2px] font-extrabold text-gold mb-2">Round Event</div>
+              <h2 className="text-[34px] font-black text-ink tracking-tight mb-3 leading-tight">Nonna's Memory</h2>
+              <p className="text-[15px] text-ink2 max-w-[280px] leading-relaxed">Watch the sequence, then repeat it. <b className="text-gold">Bonus length on success.</b></p>
+            </motion.div>
+          )}
+
+          {(phase === 'showing' || phase === 'input') && (
+            <motion.div
+              key="play"
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex-1 w-full flex flex-col items-center justify-between"
+            >
+              {/* Top: title + state */}
+              <div className="text-center mt-4">
+                <div className="text-[10px] uppercase tracking-[2px] font-bold text-ink3 mb-1">Memoria · Round {roundNum + 1}</div>
+                <h2 className="text-[24px] font-black text-ink tracking-tight">
+                  {phase === 'showing' ? 'Watch carefully…' : 'Your turn 👆'}
+                </h2>
+              </div>
+
+              {/* Sequence dots */}
+              <div className="flex gap-3 my-4">
+                {sequence.map((_, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      scale: i < inputIdx ? 1.25 : i === showIdx ? 1.4 : 1,
+                      backgroundColor: i < inputIdx ? '#10b981' : i === showIdx ? '#c97b1a' : 'rgba(74,40,24,0.18)',
+                    }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 18 }}
+                    className="w-3 h-3 rounded-full"
+                  />
+                ))}
+              </div>
+
+              {/* Buttons */}
+              <div className="grid grid-cols-3 gap-3 w-full max-w-md">
+                {['lady', 'cream', 'cocoa'].map(type => (
+                  <motion.button
+                    key={type}
+                    whileTap={{ scale: 0.94 }}
+                    animate={{
+                      scale: phase === 'showing' && sequence[showIdx] === type ? 1.08 : 1,
+                      boxShadow: phase === 'showing' && sequence[showIdx] === type
+                        ? '0 0 0 4px rgba(201,123,26,0.85), 0 0 32px rgba(201,123,26,0.65)'
+                        : '0 8px 22px rgba(74,40,24,0.18)',
+                    }}
+                    transition={{ duration: 0.18 }}
+                    onTouchStart={(e) => { e.preventDefault(); handleTap(type); }}
+                    onClick={(e) => { if (!('ontouchstart' in window)) handleTap(type); }}
+                    disabled={phase !== 'input'}
+                    className={`btn-${type} h-[110px] rounded-[20px] flex flex-col items-center justify-center font-bold ${phase !== 'input' ? 'pointer-events-none' : ''}`}
+                  >
+                    <span className="text-[40px] leading-none">{ICONS[type]}</span>
+                    <span className="text-[12px] mt-2 font-bold tracking-tight">{NAMES[type]}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {phase === 'result' && (
+            <motion.div
+              key="result"
+              initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <div className="text-[80px] mb-3 leading-none">{result === 'success' ? '🌟' : '😬'}</div>
+              <h2 className="text-[28px] font-black text-ink tracking-tight mb-2 px-4 leading-tight">
+                {result === 'success' ? pick(MEMORY_SUCCESS) : pick(MEMORY_FAIL)}
+              </h2>
+              <p className="text-[14px] text-ink2 font-medium">
+                {result === 'success' ? `+${200 * sequence.length + roundNum * 50}cm bonus` : 'No bonus this time'}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── ORDER ROUND (Customer recipe match) ─────────────────────────────────────
+const CUSTOMERS = [
+  { name: 'Sloane Mum',       portrait: '👜', quote: "I'll have what we had at L'Eliseo, dear" },
+  { name: 'Cadogan Baron',    portrait: '🎩', quote: "Nothing too sweet — I'm watching my figure" },
+  { name: 'Saatchi Curator',  portrait: '🎨', quote: "I want something… provocative" },
+  { name: 'Italian Nonna',    portrait: '👵', quote: "Authentic, like Roma. Don't disappoint." },
+  { name: 'Royal Pensioner',  portrait: '🎖️', quote: "The usual, son. Just like '52." },
+  { name: "King's Rd Ranger", portrait: '🐎', quote: "Quick — I'm parked at Sloane Square" },
+  { name: 'Fulham Dad',       portrait: '🧑‍💼', quote: "Whatever's on the menu, mate" },
+];
+
+const ORDER_SUCCESS = [
+  'Order delivered, darling!',
+  'Customer is delighted!',
+  'Five stars on Tripadvisor!',
+  'Will tell all the Sloane mums!',
+  'Bellissimo, exactly as ordered!',
+];
+const ORDER_FAIL = [
+  'Customer rejects it, disastro!',
+  'They wanted something else, ma!',
+  'Wrong order — no tip today',
+  'Madonna mia, riprova!',
+];
+
+function OrderRound({ roundNum, onComplete }) {
+  const [phase, setPhase] = useState('intro'); // intro | input | result
+  const [inputIdx, setInputIdx] = useState(0);
+  const [result, setResult] = useState(null);
+  const [shake, setShake] = useState(0);
+
+  const customer = useMemo(() => CUSTOMERS[roundNum % CUSTOMERS.length], [roundNum]);
+  const sequence = useMemo(() => {
+    const types = ['lady', 'cream', 'cocoa'];
+    const len = Math.min(4 + Math.floor(roundNum / 2), 7);
+    return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
+  }, [roundNum]);
+
+  useEffect(() => {
+    if (phase !== 'intro') return;
+    sfx.phase();
+    const t = setTimeout(() => setPhase('input'), 1700);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  const handleTap = useCallback((type) => {
+    if (phase !== 'input') return;
+    if (type === sequence[inputIdx]) {
+      sfx.perfect();
+      const newIdx = inputIdx + 1;
+      setInputIdx(newIdx);
+      if (newIdx >= sequence.length) {
+        sfx.golden();
+        setResult('success');
+        setPhase('result');
+        const bonus = 250 * sequence.length + roundNum * 80;
+        setTimeout(() => onComplete(true, bonus), 1700);
+      }
+    } else {
+      sfx.miss();
+      setShake(s => s + 1);
+      setResult('fail');
+      setPhase('result');
+      setTimeout(() => onComplete(false, 0), 1600);
+    }
+  }, [phase, inputIdx, sequence, roundNum, onComplete]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="absolute inset-0 z-30 bg-bg flex flex-col"
+    >
+      <div className="flex-1 flex flex-col items-center justify-between px-6 pt-10 pb-8">
+        <AnimatePresence mode="wait">
+          {phase === 'intro' && (
+            <motion.div
+              key="intro"
+              initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <div className="text-[80px] mb-3 leading-none pulse-emoji">{customer.portrait}</div>
+              <div className="text-[11px] uppercase tracking-[2px] font-extrabold text-gold mb-2">Posh Order</div>
+              <h2 className="text-[28px] font-black text-ink tracking-tight mb-3 leading-tight">{customer.name}</h2>
+              <p className="text-[15px] text-ink2 italic max-w-[300px] leading-relaxed font-medium">"{customer.quote}"</p>
+            </motion.div>
+          )}
+
+          {(phase === 'input') && (
+            <motion.div
+              key={'play-' + shake}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0, x: shake > 0 ? [0, -8, 8, -5, 5, 0] : 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ x: { duration: 0.4 } }}
+              className="flex-1 w-full flex flex-col items-center justify-between"
+            >
+              {/* Customer header */}
+              <div className="flex items-center gap-3 bg-surface px-4 py-3 rounded-[18px] shadow-soft border border-[rgba(74,40,24,0.08)]">
+                <div className="text-[28px] leading-none">{customer.portrait}</div>
+                <div className="text-left">
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-ink3">Order from</div>
+                  <div className="text-[15px] font-extrabold text-ink tracking-tight">{customer.name}</div>
+                </div>
+              </div>
+
+              {/* Recipe to follow — visual ingredient chain */}
+              <div className="text-center my-3">
+                <div className="text-[10px] uppercase tracking-[2px] font-bold text-ink3 mb-3">Order · {inputIdx} / {sequence.length}</div>
+                <div className="flex gap-2 justify-center flex-wrap max-w-[340px]">
+                  {sequence.map((t, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{
+                        scale: i === inputIdx ? 1.18 : i < inputIdx ? 0.92 : 1,
+                        opacity: i < inputIdx ? 0.45 : 1,
+                      }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+                      className={`relative w-10 h-10 rounded-[10px] flex items-center justify-center text-[20px] btn-${t}`}
+                      style={{
+                        boxShadow: i === inputIdx ? '0 0 0 3px rgba(201,123,26,0.7)' : 'none',
+                      }}
+                    >
+                      {ICONS[t]}
+                      {i < inputIdx && <div className="absolute inset-0 flex items-center justify-center text-[16px] text-successgreen font-black">✓</div>}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="grid grid-cols-3 gap-3 w-full max-w-md">
+                {['lady', 'cream', 'cocoa'].map(type => (
+                  <motion.button
+                    key={type}
+                    whileTap={{ scale: 0.94 }}
+                    onTouchStart={(e) => { e.preventDefault(); handleTap(type); }}
+                    onClick={(e) => { if (!('ontouchstart' in window)) handleTap(type); }}
+                    className={`btn-${type} h-[110px] rounded-[20px] flex flex-col items-center justify-center font-bold shadow-[0_8px_22px_rgba(74,40,24,0.18)]`}
+                  >
+                    <span className="text-[40px] leading-none">{ICONS[type]}</span>
+                    <span className="text-[12px] mt-2 font-bold tracking-tight">{NAMES[type]}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {phase === 'result' && (
+            <motion.div
+              key="result"
+              initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <div className="text-[80px] mb-3 leading-none">{result === 'success' ? customer.portrait : '😬'}</div>
+              <h2 className="text-[28px] font-black text-ink tracking-tight mb-2 px-4 leading-tight">
+                {result === 'success' ? pick(ORDER_SUCCESS) : pick(ORDER_FAIL)}
+              </h2>
+              <p className="text-[14px] text-ink2 font-medium">
+                {result === 'success' ? `+${250 * sequence.length + roundNum * 80}cm bonus` : 'Customer leaves empty-handed'}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
