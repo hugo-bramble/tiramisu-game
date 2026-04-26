@@ -218,6 +218,7 @@ function Welcome({ onStart }) {
   // Skip cinematic if user has seen it before
   const seenIntro = (() => { try { return localStorage.getItem('tiramisu_seen_intro') === '1'; } catch (e) { return false; } })();
   const [step, setStep] = useState(seenIntro ? 99 : 0); // 99 = jump straight to rules
+  const personalBest = getBest();
   const next = () => setStep(s => {
     const ns = s + 1;
     // Mark intro as seen when user reaches the rules card
@@ -402,7 +403,13 @@ function Welcome({ onStart }) {
       >
         <div className="text-[56px] mb-1 leading-none select-none">🍰</div>
         <h2 className="text-[26px] font-black text-ink tracking-tight mb-1 leading-tight">How to play</h2>
-        <div className="text-[11px] text-gold font-extrabold tracking-[2px] uppercase mb-5">Four things to know</div>
+        <div className="text-[11px] text-gold font-extrabold tracking-[2px] uppercase mb-3">Four things to know</div>
+        {personalBest > 0 && (
+          <div className="text-[12px] text-ink2 font-semibold mb-4 px-3 py-1.5 bg-surface2 rounded-full inline-flex items-center gap-1.5">
+            <span className="text-[10px] text-ink3 font-bold tracking-wider uppercase">Your best</span>
+            <span className="text-ink font-extrabold">{fmt(personalBest)}m</span>
+          </div>
+        )}
 
         <ul className="text-left mb-5 space-y-3">
           <HowItem icon="👆">Tap when the marker hits <b className="text-successgreen">green</b> for perfetto.</HowItem>
@@ -1689,11 +1696,11 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
   const isFirst = roundNum === 0;
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
-    const len = Math.min(4 + phaseIdx + Math.floor(roundNum / 3), 8);
+    const len = Math.min(3 + phaseIdx + Math.floor(roundNum / 3), 6);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
   }, [roundNum, phaseIdx]);
-  // Hit window: generous early (1.5s+), tight late (~700ms)
-  const hitWindow = Math.max(700, 1700 - phaseIdx * 200 - roundNum * 30);
+  // Hit window: VERY generous — 2.5s early, 1.5s late
+  const hitWindow = Math.max(1500, 2500 - phaseIdx * 250 - roundNum * 30);
   const hitTimerRef = useRef(null);
   const aliveRef = useRef(true);
   const phaseRef = useRef(phase);
@@ -1773,7 +1780,7 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
         sfx.perfect();
         setHits(h => h + 1);
         setShowIdx(-1);
-        setTimeout(advance, 130);
+        setTimeout(advance, 280); // breathing room between ingredients
       } else {
         clearTimeout(hitTimerRef.current);
         sfx.miss();
