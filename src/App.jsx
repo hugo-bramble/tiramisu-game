@@ -214,10 +214,12 @@ function FlagStripe() {
 
 // ─── WELCOME ─────────────────────────────────────────────────────────────────
 function Welcome({ onStart }) {
-  // Step phases: 0..4 cinematic, 5 = profile, 6 = ready
+  // Step phases: 0..4 cinematic, 5 = profile, 6..8 = tutorial slides, 9 = ready
   const seenIntro = (() => { try { return localStorage.getItem('tiramisu_seen_intro') === '1'; } catch (e) { return false; } })();
   const PROFILE_STEP = 5;
-  const READY_STEP = 6;
+  const TUTORIAL_FIRST = 6;
+  const TUTORIAL_COUNT = 4;
+  const READY_STEP = TUTORIAL_FIRST + TUTORIAL_COUNT - 1; // 9 — last tutorial slide has Begin built in
   const [step, setStep] = useState(seenIntro ? PROFILE_STEP : 0);
   const personalBest = getBest();
   const [name, setName] = useState(() => getUsername());
@@ -484,74 +486,79 @@ function Welcome({ onStart }) {
           </>
         )}
 
-        {step >= READY_STEP && (
-          <>
-            <div className="text-[44px] mb-1 leading-none select-none mt-2">🍰</div>
-            <h2 className="text-[22px] font-black text-ink tracking-tight leading-tight">Ready, {name || 'Anonymous'}?</h2>
-            <p className="text-[10px] text-gold font-extrabold tracking-[1.5px] uppercase mb-4">Beat 275m · Build 300m</p>
-
-            <ul className="text-left mb-4 space-y-2.5 px-1">
-              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
-                <span className="text-[18px] flex-none w-6 text-center">👆</span>
-                <span>Tap when marker hits <b className="text-successgreen">GREEN</b> for perfetto. <b className="text-errorred">RED = sloppy, costs a heart.</b></span>
-              </li>
-              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
-                <span className="text-[18px] flex-none w-6 text-center">❤️</span>
-                <span>You have <b>3 hearts</b>. Hit 0 and the run ends.</span>
-              </li>
-              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
-                <span className="text-[18px] flex-none w-6 text-center">🔥</span>
-                <span>Chain perfetti to grow your <b className="text-gold">×8 multiplier</b> (more cm per tap). One miss resets it.</span>
-              </li>
-              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
-                <span className="text-[18px] flex-none w-6 text-center">☕</span>
-                <span>Every <b>5 perfetti in a row</b> earns an espresso. Tap the cup to slow the meter — save for the hard phases.</span>
-              </li>
-              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
-                <span className="text-[18px] flex-none w-6 text-center">🧠</span>
-                <span>Memory · Order · Lightning rounds appear between slices. <b className="text-errorred">Fail = −1 ♥</b>.</span>
-              </li>
-            </ul>
-
-            {/* Leaderboard preview */}
-            {(board.length > 0 || isGlobal) && (
-              <div className="mb-4 p-2.5 bg-surface2 rounded-[12px] text-left border border-[rgba(74,40,24,0.08)]">
-                <div className="text-[10px] uppercase tracking-[1.3px] text-ink3 font-extrabold mb-1.5 text-center flex items-center justify-center gap-1">
-                  <span>🏆</span><span>{isGlobal ? "Players you'll chase" : 'Best runs'}</span>
-                </div>
-                {loadingGlobal && <div className="text-center text-[11px] text-ink3 py-1 italic">Loading…</div>}
-                {!loadingGlobal && board.length === 0 && (
-                  <div className="text-center text-[11px] text-ink3 py-1 italic">Be the first!</div>
+        {/* Tutorial slides — one rule per screen */}
+        {step >= TUTORIAL_FIRST && step <= READY_STEP && (() => {
+          const slideIdx = step - TUTORIAL_FIRST;
+          const slide = TUTORIAL_SLIDES[slideIdx];
+          const isLast = step === READY_STEP;
+          return (
+            <div className="mt-2">
+              <div className="text-[10px] uppercase tracking-[1.5px] font-extrabold text-ink3 mb-3">
+                Step {slideIdx + 1} of {TUTORIAL_COUNT}
+              </div>
+              <motion.div
+                key={slideIdx}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              >
+                <div className="text-[64px] leading-none mb-4 select-none">{slide.icon}</div>
+                <h2 className="text-[24px] font-black text-ink tracking-tight leading-tight mb-2">{slide.title}</h2>
+                <p className="text-[14px] text-ink leading-relaxed mb-2 px-2">{slide.sub}</p>
+                {slide.detail && (
+                  <p className="text-[12px] text-ink2 italic mb-5 px-2">{slide.detail}</p>
                 )}
-                {!loadingGlobal && board.slice(0, 3).map((entry, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-[12px] py-0.5 px-1">
-                    <span className={`w-4 font-extrabold ${i === 0 ? 'text-gold' : 'text-ink2'}`}>{i + 1}</span>
-                    {entry.team === 'GB' && <span>🇬🇧</span>}
-                    {entry.team === 'IT' && <span>🇮🇹</span>}
-                    <span className="flex-1 font-bold text-ink truncate">{entry.name}</span>
-                    <span className="font-extrabold text-ink tabular-nums">{fmt(entry.cm)}m</span>
+              </motion.div>
+
+              {/* Visual demo per slide */}
+              {slideIdx === 0 && <TutorialMeterDemo />}
+              {slideIdx === 1 && <TutorialMultiplierDemo />}
+
+              {/* Last slide: leaderboard preview + sound hint */}
+              {isLast && (board.length > 0 || isGlobal) && (
+                <div className="mb-3 p-2.5 bg-surface2 rounded-[12px] text-left border border-[rgba(74,40,24,0.08)]">
+                  <div className="text-[10px] uppercase tracking-[1.3px] text-ink3 font-extrabold mb-1.5 text-center flex items-center justify-center gap-1">
+                    <span>🏆</span><span>{isGlobal ? "Players you'll chase" : 'Best runs'}</span>
                   </div>
-                ))}
-                {board.length > 3 && (
-                  <button onClick={() => setShowLeaderboard(true)} className="mt-1.5 text-[10px] text-gold underline w-full text-center font-bold">View all 25 →</button>
+                  {loadingGlobal && <div className="text-center text-[11px] text-ink3 py-1 italic">Loading…</div>}
+                  {!loadingGlobal && board.length === 0 && (
+                    <div className="text-center text-[11px] text-ink3 py-1 italic">Be the first!</div>
+                  )}
+                  {!loadingGlobal && board.slice(0, 3).map((entry, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-[12px] py-0.5 px-1">
+                      <span className={`w-4 font-extrabold ${i === 0 ? 'text-gold' : 'text-ink2'}`}>{i + 1}</span>
+                      {entry.team === 'GB' && <span>🇬🇧</span>}
+                      {entry.team === 'IT' && <span>🇮🇹</span>}
+                      <span className="flex-1 font-bold text-ink truncate">{entry.name}</span>
+                      <span className="font-extrabold text-ink tabular-nums">{fmt(entry.cm)}m</span>
+                    </div>
+                  ))}
+                  {board.length > 3 && (
+                    <button onClick={() => setShowLeaderboard(true)} className="mt-1.5 text-[10px] text-gold underline w-full text-center font-bold">View all 25 →</button>
+                  )}
+                </div>
+              )}
+              {isLast && (
+                <div className="text-[10px] text-ink3 italic mb-3 flex items-center justify-center gap-1.5">
+                  <span>🔊</span><span>For full effect, turn the silent switch off</span>
+                </div>
+              )}
+
+              <button
+                onClick={() => isLast ? onStart(false) : next()}
+                className="block w-full py-3 rounded-[12px] text-[13px] font-extrabold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform"
+              >
+                {isLast ? `Begin · ${name || 'Anonymous'}` : 'Continue →'}
+              </button>
+              <div className="flex justify-center gap-4 pt-1">
+                <button onClick={() => setStep(slideIdx === 0 ? PROFILE_STEP : step - 1)} className="text-[10px] text-ink3 underline">← Back</button>
+                {!isLast && (
+                  <button onClick={() => setStep(READY_STEP)} className="text-[10px] text-ink3 underline">Skip tutorial</button>
                 )}
               </div>
-            )}
-
-            {/* Sound hint — tells iPhone players to disable silent switch */}
-            <div className="text-[10px] text-ink3 italic mb-2 flex items-center justify-center gap-1.5">
-              <span>🔊</span><span>For full effect, turn the silent switch off</span>
             </div>
-
-            <button onClick={() => onStart(true)} className="block w-full py-3.5 rounded-[12px] text-[14px] font-extrabold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform">
-              Begin
-            </button>
-            <div className="flex justify-center gap-4 pt-1">
-              <button onClick={() => setStep(PROFILE_STEP)} className="text-[10px] text-ink3 underline">← Edit name</button>
-              <button onClick={() => onStart(false)} className="text-[10px] text-ink3 underline">Skip hints</button>
-            </div>
-          </>
-        )}
+          );
+        })()}
       </motion.div>
 
       {/* Leaderboard panel */}
@@ -603,6 +610,98 @@ function Welcome({ onStart }) {
         )}
       </AnimatePresence>
     </motion.div>
+  );
+}
+
+// Tutorial slides — one concept per screen
+const TUTORIAL_SLIDES = [
+  {
+    icon: '🎯',
+    title: 'Tap when GREEN',
+    sub: 'Time the marker to the green stripe for perfetto.',
+    detail: 'Yellow = okay · RED = sloppy, costs a heart',
+  },
+  {
+    icon: '🔥',
+    title: 'Build the multiplier',
+    sub: 'Each perfetto in a row stacks your multiplier — up to ×8.',
+    detail: 'Every miss resets it. Chains are how you score big.',
+  },
+  {
+    icon: '☕',
+    title: 'Earn an espresso',
+    sub: 'Every 5 perfetti in a row gives you one.',
+    detail: 'Tap the cup ☕ to slow the meter for 4 layers. Save it for hard phases.',
+  },
+  {
+    icon: '🏆',
+    title: 'Beat 275m, push for 300',
+    sub: '3 hearts. Lose them on red taps and failed mini-rounds (memory · order · lightning).',
+    detail: 'Set the world record. Top the leaderboard.',
+  },
+];
+
+// Mini animated meter showing the timing concept
+function TutorialMeterDemo() {
+  const [pos, setPos] = useState(20);
+  const [dir, setDir] = useState(1);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPos(p => {
+        let next = p + dir * 2.5;
+        if (next >= 100) { next = 100; setDir(-1); }
+        if (next <= 0) { next = 0; setDir(1); }
+        return next;
+      });
+    }, 30);
+    return () => clearInterval(id);
+  }, [dir]);
+  return (
+    <div className="mb-4 mx-2">
+      <div className="h-[28px] bg-surface border border-[rgba(74,40,24,0.1)] rounded-full overflow-hidden relative shadow-soft">
+        <div className="absolute inset-0 flex">
+          <div style={{ width: '24%' }} className="zone-bad" />
+          <div style={{ width: '21%' }} className="zone-good" />
+          <div style={{ width: '10%' }} className="zone-perfect" />
+          <div style={{ width: '21%' }} className="zone-good" />
+          <div style={{ width: '24%' }} className="zone-bad" />
+        </div>
+        <div
+          style={{ left: pos + '%' }}
+          className="absolute top-[3px] bottom-[3px] w-[3px] bg-ink rounded-full shadow-[0_0_8px_rgba(31,17,8,0.5)]"
+        />
+      </div>
+      <div className="text-[9px] uppercase tracking-wider font-bold text-ink3 mt-1 flex justify-between px-1">
+        <span className="text-errorred">RED</span>
+        <span className="text-gold">YELLOW</span>
+        <span className="text-successgreen">GREEN</span>
+        <span className="text-gold">YELLOW</span>
+        <span className="text-errorred">RED</span>
+      </div>
+    </div>
+  );
+}
+
+// Mini multiplier demo cycling through tiers
+function TutorialMultiplierDemo() {
+  const [tier, setTier] = useState(1);
+  useEffect(() => {
+    const id = setInterval(() => setTier(t => t === 4 ? 1 : t + 1), 900);
+    return () => clearInterval(id);
+  }, []);
+  const labels = { 1: '×1', 2: '×2', 3: '×3 →×5', 4: '×8' };
+  const colors = { 1: 'bg-surface2 text-ink2', 2: 'bg-goldsoft text-cocoa', 3: 'bg-gold text-white', 4: 'bg-gradient-to-r from-[#f59e0b] to-[#ef4444] text-white' };
+  return (
+    <div className="mb-4 flex items-center justify-center gap-2">
+      {[1, 2, 3, 4].map(t => (
+        <div
+          key={t}
+          className={`px-3 py-1.5 rounded-full text-[14px] font-extrabold transition-all duration-300 ${t === tier ? colors[t] + ' scale-110 shadow-lg' : 'bg-surface2 text-ink3 opacity-50 scale-90'}`}
+        >
+          {labels[t]}
+        </div>
+      ))}
+    </div>
   );
 }
 
