@@ -691,8 +691,9 @@ function Game({ hintsOn, onEnd }) {
 
       // Increment slice count and check for event round trigger
       sliceCountRef.current += 1;
-      // Every 3rd slice triggers an event round (rotates: memory → order → lightning)
-      if (sliceCountRef.current % 3 === 0 && sliceCountRef.current > 0) {
+      // Events start from Phase 1 (Pasticcere) onwards — Apprentice is timing-only
+      // Every 3rd slice triggers an event (rotates: memory → order → lightning)
+      if (sliceCountRef.current % 3 === 0 && sliceCountRef.current > 0 && phaseIdxRef.current >= 1) {
         setTimeout(() => {
           eventCounterRef.current += 1;
           const types = ['memory', 'order', 'lightning'];
@@ -1589,11 +1590,11 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
   const isFirst = roundNum === 0;
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
-    const len = Math.min(5 + Math.floor(roundNum / 2) + phaseIdx, 9);
+    const len = Math.min(4 + phaseIdx + Math.floor(roundNum / 3), 8);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
   }, [roundNum, phaseIdx]);
-  // Hit window shrinks with phase: 850ms early, 450ms late
-  const hitWindow = Math.max(420, 900 - phaseIdx * 100 - roundNum * 30);
+  // Hit window: generous early (1.1s), tight late (440ms)
+  const hitWindow = Math.max(440, 1100 - phaseIdx * 130 - roundNum * 25);
   const hitTimerRef = useRef(null);
   const aliveRef = useRef(true);
   const phaseRef = useRef(phase);
@@ -1888,11 +1889,11 @@ function OrderRound({ roundNum, phaseIdx = 0, onComplete }) {
   const customer = useMemo(() => CUSTOMERS[roundNum % CUSTOMERS.length], [roundNum]);
   const sequence = useMemo(() => {
     const types = ['lady', 'cream', 'cocoa'];
-    const len = Math.min(4 + Math.floor(roundNum / 2) + phaseIdx, 8);
+    const len = Math.min(3 + phaseIdx + Math.floor(roundNum / 3), 8);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
   }, [roundNum, phaseIdx]);
-  // Reveal duration shrinks with phase: 4s early game, 2s by Leggenda
-  const revealMs = Math.max(2000, 4500 - phaseIdx * 600);
+  // Reveal duration: generous in early game (5s), tight late game (2.2s)
+  const revealMs = Math.max(2200, 5500 - phaseIdx * 700);
 
   useEffect(() => {
     if (phase === 'intro') sfx.phase();
