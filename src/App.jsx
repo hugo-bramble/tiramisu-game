@@ -750,19 +750,28 @@ function Game({ hintsOn, onEnd }) {
     } else {
       statsRef.current.miniGamesLost += 1;
       sfx.miss();
-      // Penalty: lose 1 heart on event failure (raises stakes)
-      const newLives = livesRef.current - 1;
-      setLives(newLives);
-      setShake(s => s + 1);
-      setFlash(f => f + 1);
-      const failMsg =
-        kind === 'memory' ? 'Memory failed · −1 ♥'
-        : kind === 'order' ? 'Order rejected · −1 ♥'
-        : 'Lightning missed · −1 ♥';
-      showToast(failMsg, 'red', 2600);
-      if (newLives <= 0) {
-        runningRef.current = false;
-        setTimeout(() => onEnd({ length: lengthRef.current, runId: Date.now(), stats: { ...statsRef.current } }), 800);
+      // Penalty only kicks in from Phase 2 (Maestro) — Pasticcere is forgiving
+      const penalize = phaseIdxRef.current >= 2;
+      if (penalize) {
+        const newLives = livesRef.current - 1;
+        setLives(newLives);
+        setShake(s => s + 1);
+        setFlash(f => f + 1);
+        const failMsg =
+          kind === 'memory' ? 'Memory failed · −1 ♥'
+          : kind === 'order' ? 'Order rejected · −1 ♥'
+          : 'Lightning missed · −1 ♥';
+        showToast(failMsg, 'red', 2600);
+        if (newLives <= 0) {
+          runningRef.current = false;
+          setTimeout(() => onEnd({ length: lengthRef.current, runId: Date.now(), stats: { ...statsRef.current } }), 800);
+        }
+      } else {
+        const failMsg =
+          kind === 'memory' ? 'Memory failed — no bonus'
+          : kind === 'order' ? 'Order rejected — no bonus'
+          : 'Lightning missed — no bonus';
+        showToast(failMsg, 'red', 2400);
       }
     }
     if (kind === 'memory') setMemoryRoundCount(c => c + 1);
