@@ -1331,7 +1331,7 @@ function GameOver({ stats, onRestart, onHome }) {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 p-6 pb-10 bg-[rgba(253,246,232,0.94)] backdrop-blur-xl overflow-y-auto"
+      className="absolute inset-0 z-30 flex flex-col items-center justify-start gap-3 px-6 py-8 pb-12 bg-[rgba(253,246,232,0.94)] backdrop-blur-xl overflow-y-auto"
     >
       <h2 className="text-[26px] font-extrabold text-ink tracking-tight text-center">{title}</h2>
       <div className="text-[10px] text-ink3 uppercase tracking-widest font-bold">Final length</div>
