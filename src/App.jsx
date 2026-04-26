@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { sfx, unlockAudio } from './audio';
+import { fetchGlobalLeaderboard, postScore, isGlobalLeaderboardConfigured } from './leaderboard';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const RECIPE = ['lady', 'cream', 'lady', 'cream', 'cocoa'];
@@ -234,7 +235,23 @@ function Welcome({ onStart }) {
   const personalBest = getBest();
   const [name, setName] = useState(() => getUsername());
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const leaderboard = getLeaderboard();
+  const [globalBoard, setGlobalBoard] = useState(null);
+  const [loadingGlobal, setLoadingGlobal] = useState(false);
+  const localBoard = getLeaderboard();
+
+  // Fetch global when leaderboard panel opens
+  useEffect(() => {
+    if (showLeaderboard && isGlobalLeaderboardConfigured() && !globalBoard) {
+      setLoadingGlobal(true);
+      fetchGlobalLeaderboard(25).then(b => {
+        setGlobalBoard(b || []);
+        setLoadingGlobal(false);
+      });
+    }
+  }, [showLeaderboard, globalBoard]);
+
+  const isGlobal = isGlobalLeaderboardConfigured();
+  const board = isGlobal && globalBoard ? globalBoard : localBoard;
   const next = () => setStep(s => {
     const ns = s + 1;
     // Mark intro as seen when user reaches the rules card
@@ -452,7 +469,7 @@ function Welcome({ onStart }) {
           Skip — sono italiano
         </button>
         <div className="flex justify-center gap-4 pt-2">
-          {leaderboard.length > 0 && (
+          {(localBoard.length > 0 || isGlobal) && (
             <button
               onClick={() => setShowLeaderboard(true)}
               className="text-[10px] text-ink3 underline hover:text-ink2"
@@ -484,10 +501,18 @@ function Welcome({ onStart }) {
               <div className="text-center mb-4">
                 <div className="text-[44px] mb-1 leading-none">🏆</div>
                 <h3 className="text-[22px] font-black text-ink tracking-tight">Top runs</h3>
-                <p className="text-[11px] text-ink3 font-bold tracking-wider uppercase mt-1">On this device</p>
+                <p className="text-[11px] text-ink3 font-bold tracking-wider uppercase mt-1">
+                  {isGlobal ? 'Global leaderboard' : 'On this device'}
+                </p>
               </div>
+              {loadingGlobal && (
+                <div className="text-center text-[12px] text-ink3 py-6">Loading…</div>
+              )}
               <div className="space-y-1.5">
-                {leaderboard.map((entry, i) => (
+                {!loadingGlobal && board.length === 0 && (
+                  <div className="text-center text-[12px] text-ink3 py-4 italic">No runs yet — be the first!</div>
+                )}
+                {!loadingGlobal && board.map((entry, i) => (
                   <div key={i} className="flex items-center gap-3 py-2 px-3 rounded-[10px] bg-surface2">
                     <div className={`w-6 text-[14px] font-extrabold ${i === 0 ? 'text-gold' : i < 3 ? 'text-ink' : 'text-ink3'}`}>{i + 1}</div>
                     <div className="flex-1 text-[13px] font-bold text-ink truncate">{entry.name}</div>
@@ -1356,8 +1381,12 @@ function GameOver({ stats, onRestart, onHome }) {
     const wasNew = saveBest(stats.length);
     setIsNew(wasNew);
     setBest(getBest());
-    // Also add to local leaderboard
+    // Add to local leaderboard
     addToLeaderboard(getUsername(), stats.length);
+    // Also post to global if configured
+    if (isGlobalLeaderboardConfigured() && stats.length > 100) {
+      postScore(getUsername() || 'Anonymous', stats.length);
+    }
   }, [stats.length]);
 
   let title = 'Servizio finito', verdict = '', closingScene = '', stars = 0;
@@ -1461,7 +1490,7 @@ function GameOver({ stats, onRestart, onHome }) {
             <div className="flex items-center justify-between gap-2">
               <div className="flex-1">
                 <div className="text-[14px] font-extrabold text-ink leading-tight">🤫 Bribe the judges</div>
-                <div className="text-[11px] text-ink2 mt-0.5">Transfer £10 to Hugo via Monzo to stay in the game</div>
+                <div className="text-[11px] text-ink2 mt-0.5">Transfer £10 to Hugo via Revolut to stay in the game</div>
               </div>
               <button
                 onClick={() => { setIapStage('processing'); setTimeout(() => setIapStage('rugpull'), 1800); }}
@@ -1481,7 +1510,7 @@ function GameOver({ stats, onRestart, onHome }) {
             >⏳</motion.div>
             <div className="flex-1">
               <div className="text-[12px] font-bold text-ink">Bribing judges…</div>
-              <div className="text-[10px] text-ink2 mt-0.5">Sending £10 to Hugo via Monzo</div>
+              <div className="text-[10px] text-ink2 mt-0.5">Sending £10 to Hugo via Revolut</div>
             </div>
           </div>
         )}
