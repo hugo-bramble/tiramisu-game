@@ -189,7 +189,10 @@ export default function App() {
     setScreen('game');
   };
   const end = (stats) => { setEndStats(stats); setScreen('gameover'); };
-  const restart = () => setScreen('game');
+  const restart = () => {
+    setHintsOn(false); // hints only on first run, not on replay
+    setScreen('game');
+  };
   const back = () => setScreen('welcome');
 
   return (
