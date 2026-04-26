@@ -1616,8 +1616,8 @@ function LightningRound({ roundNum, phaseIdx = 0, onComplete }) {
     const len = Math.min(4 + phaseIdx + Math.floor(roundNum / 3), 8);
     return Array.from({ length: len }, () => types[Math.floor(Math.random() * 3)]);
   }, [roundNum, phaseIdx]);
-  // Hit window: generous early (1.1s), tight late (440ms)
-  const hitWindow = Math.max(440, 1100 - phaseIdx * 130 - roundNum * 25);
+  // Hit window: generous early (1.5s+), tight late (~700ms)
+  const hitWindow = Math.max(700, 1700 - phaseIdx * 200 - roundNum * 30);
   const hitTimerRef = useRef(null);
   const aliveRef = useRef(true);
   const phaseRef = useRef(phase);
