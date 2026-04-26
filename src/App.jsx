@@ -490,6 +490,7 @@ function Game({ hintsOn, onEnd }) {
   const modeRef = useRef('timing');
   const sliceCountRef = useRef(0);
   const eventCounterRef = useRef(0); // alternates memory ↔ order
+  const transitioningRef = useRef(false); // blocks taps during slice complete transition
 
   // Keep refs in sync
   useEffect(() => { lengthRef.current = length; }, [length]);
@@ -577,6 +578,7 @@ function Game({ hintsOn, onEnd }) {
 
   const handleTap = useCallback(() => {
     if (!runningRef.current || pausedRef.current || modeRef.current !== 'timing') return;
+    if (transitioningRef.current) return; // ignore taps during slice transition
     sfx.tap();
     const quality = computeQuality();
     const type = RECIPE[layerIdxRef.current];
@@ -704,10 +706,12 @@ function Game({ hintsOn, onEnd }) {
         return [...t, sliceObj];
       });
       // Reset slice
+      transitioningRef.current = true;
       setTimeout(() => {
         setSliceLayers([]);
         setLayerIdx(0);
         setBuilderAnim(null);
+        transitioningRef.current = false;
       }, 700);
 
       // Increment slice count and check for event round trigger
@@ -1371,11 +1375,11 @@ function GameOver({ stats, onRestart, onHome }) {
       >
         {iapStage === 'offer' && (
           <>
-            <div className="text-[10px] uppercase tracking-wider text-ink3 font-bold mb-1">Continue your run?</div>
+            <div className="text-[10px] uppercase tracking-wider text-ink3 font-bold mb-1">Discreet offer</div>
             <div className="flex items-center justify-between gap-2">
               <div className="flex-1">
-                <div className="text-[14px] font-extrabold text-ink leading-tight">Buy 1 extra ♥</div>
-                <div className="text-[11px] text-ink2 mt-0.5">Transfer £10 to Hugo via Monzo</div>
+                <div className="text-[14px] font-extrabold text-ink leading-tight">🤫 Bribe the judges</div>
+                <div className="text-[11px] text-ink2 mt-0.5">Transfer £10 to Hugo via Monzo to stay in the game</div>
               </div>
               <button
                 onClick={() => { setIapStage('processing'); setTimeout(() => setIapStage('rugpull'), 1800); }}
@@ -1394,16 +1398,16 @@ function GameOver({ stats, onRestart, onHome }) {
               className="text-[20px]"
             >⏳</motion.div>
             <div className="flex-1">
-              <div className="text-[12px] font-bold text-ink">Processing transfer…</div>
-              <div className="text-[10px] text-ink2 mt-0.5">Connecting to Monzo</div>
+              <div className="text-[12px] font-bold text-ink">Bribing judges…</div>
+              <div className="text-[10px] text-ink2 mt-0.5">Sending £10 to Hugo via Monzo</div>
             </div>
           </div>
         )}
         {iapStage === 'rugpull' && (
           <div className="text-center py-1">
             <div className="text-[28px] leading-none mb-1">😏</div>
-            <div className="text-[13px] font-extrabold text-ink">Just kidding!</div>
-            <div className="text-[11px] text-ink2 mt-1 italic">No microtransactions at Chelsea Town Hall. Riprova free, caro.</div>
+            <div className="text-[13px] font-extrabold text-ink">Just kidding! Hugo isn't taking bribes.</div>
+            <div className="text-[11px] text-ink2 mt-1 italic">Chelsea Town Hall has standards. Riprova free, caro.</div>
           </div>
         )}
       </motion.div>
