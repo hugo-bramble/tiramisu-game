@@ -69,7 +69,7 @@ const JOKES = {
     'Eataly approves',
     "The Daily Mail can't fault it",
     'Even the Italian Embassy calls',
-    'Bramble worthy',
+    "Da Bocca di Lupo level",
     'Royal-Hospital-Road-tier',
     'Not bad for SW3',
     'Sloane Rangers nod',
@@ -507,9 +507,26 @@ function Welcome({ onStart }) {
             <p className="text-[10px] text-gold font-extrabold tracking-[1.5px] uppercase mb-4">Beat 275m · Build 300m</p>
 
             <ul className="text-left mb-4 space-y-2.5 px-1">
-              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug"><span className="text-[18px] flex-none w-6 text-center">👆</span><span>Tap when marker hits <b className="text-successgreen">green</b>.</span></li>
-              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug"><span className="text-[18px] flex-none w-6 text-center">🔥</span><span>Stack perfetti for <b className="text-gold">×8 multiplier</b>. <b>☕ Espresso</b> at 5 perfetti slows meter.</span></li>
-              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug"><span className="text-[18px] flex-none w-6 text-center">🧠</span><span>Mini-rounds between slices. <b className="text-errorred">Fail = −1 ♥</b>.</span></li>
+              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
+                <span className="text-[18px] flex-none w-6 text-center">👆</span>
+                <span>Tap when marker hits <b className="text-successgreen">GREEN</b> for perfetto. <b className="text-errorred">RED = sloppy, costs a heart.</b></span>
+              </li>
+              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
+                <span className="text-[18px] flex-none w-6 text-center">❤️</span>
+                <span>You have <b>3 hearts</b>. Hit 0 and the run ends.</span>
+              </li>
+              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
+                <span className="text-[18px] flex-none w-6 text-center">🔥</span>
+                <span>Chain perfetti to grow your <b className="text-gold">×8 multiplier</b> (more cm per tap). One miss resets it.</span>
+              </li>
+              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
+                <span className="text-[18px] flex-none w-6 text-center">☕</span>
+                <span>Every <b>5 perfetti in a row</b> earns an espresso. Tap the cup to slow the meter — save for the hard phases.</span>
+              </li>
+              <li className="text-[12.5px] text-ink flex gap-2.5 leading-snug">
+                <span className="text-[18px] flex-none w-6 text-center">🧠</span>
+                <span>Memory · Order · Lightning rounds appear between slices. <b className="text-errorred">Fail = −1 ♥</b>.</span>
+              </li>
             </ul>
 
             {/* Leaderboard preview */}
@@ -1129,18 +1146,18 @@ function Game({ hintsOn, onEnd }) {
           </AnimatePresence>
         </div>
 
-        {/* Toast — wrapper handles centering, motion handles animation */}
-        <div className="absolute top-[110px] left-0 right-0 flex justify-center pointer-events-none z-20 px-4">
+        {/* Toast — uses inline-block layout that centers naturally without flex */}
+        <div className="absolute top-[110px] left-0 right-0 text-center pointer-events-none z-20 px-4">
           <AnimatePresence>
             {toast && (
               <motion.div
                 key={toast.id}
-                initial={{ opacity: 0, y: -12, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
                 className={
-                  'px-[22px] py-[12px] rounded-full font-extrabold text-[15px] shadow-large whitespace-nowrap max-w-full overflow-hidden text-ellipsis text-center ' +
+                  'inline-block px-[22px] py-[12px] rounded-full font-extrabold text-[15px] shadow-large max-w-full overflow-hidden text-ellipsis whitespace-nowrap ' +
                   (toast.kind === 'red' ? 'bg-errorred text-white'
                   : toast.kind === 'green' ? 'bg-successgreen text-white'
                   : toast.kind === 'gold' ? 'bg-gold text-white'
@@ -1494,6 +1511,10 @@ function GameOver({ stats, onRestart, onHome }) {
   const [iapStage, setIapStage] = useState('offer'); // offer | processing | rugpull
   const [isNew, setIsNew] = useState(false);
   const [best, setBest] = useState(() => getBest());
+  const [board, setBoard] = useState(null);
+  const [myRank, setMyRank] = useState(null);
+  const playerName = getUsername() || 'Anonymous';
+  const playerTeam = getTeam();
 
   // Save best ONCE on mount (idempotent across re-renders)
   useEffect(() => {
@@ -1502,9 +1523,23 @@ function GameOver({ stats, onRestart, onHome }) {
     setBest(getBest());
     // Add to local leaderboard
     addToLeaderboard(getUsername(), stats.length, getTeam());
-    // Also post to global if configured
+    // Also post to global if configured + fetch updated rankings
     if (isGlobalLeaderboardConfigured() && stats.length > 100) {
-      postScore(getUsername() || 'Anonymous', stats.length, getTeam());
+      postScore(playerName, stats.length, playerTeam).then(() => {
+        // Brief delay to ensure POST is indexed before fetching
+        setTimeout(() => {
+          fetchGlobalLeaderboard(50).then(b => {
+            if (!b) return;
+            setBoard(b);
+            const cmFloor = Math.floor(stats.length);
+            const rank = b.filter(e => e.cm > cmFloor).length + 1;
+            setMyRank(rank);
+          });
+        }, 1200);
+      });
+    } else if (isGlobalLeaderboardConfigured()) {
+      // Score too low to post but still show leaderboard for context
+      fetchGlobalLeaderboard(25).then(b => setBoard(b || []));
     }
   }, [stats.length]);
 
@@ -1595,6 +1630,44 @@ function GameOver({ stats, onRestart, onHome }) {
 
       <p className="text-[14px] text-center text-ink2 leading-snug max-w-[340px] font-medium px-2 mt-1">{verdict}</p>
       <p className="text-[12px] text-center text-gold italic font-bold leading-snug max-w-[320px] px-2 mt-1">{closingScene}</p>
+
+      {/* Global leaderboard panel */}
+      {board && board.length > 0 && (
+        <div className="bg-surface2 rounded-[14px] p-3 max-w-[340px] w-full mt-2 border border-[rgba(74,40,24,0.08)]">
+          <div className="text-center mb-2">
+            <div className="text-[10px] uppercase tracking-[1.5px] text-ink3 font-extrabold flex items-center justify-center gap-1">
+              <span>🏆</span><span>Global leaderboard</span>
+            </div>
+            {myRank && myRank <= board.length && (
+              <div className="text-[14px] font-extrabold text-gold mt-1">
+                You're #{myRank} of {board.length}
+              </div>
+            )}
+            {myRank && myRank > board.length && (
+              <div className="text-[12px] font-bold text-ink2 mt-1">
+                Outside the top {board.length} — riprova!
+              </div>
+            )}
+          </div>
+          <div className="space-y-1">
+            {board.slice(0, 5).map((entry, i) => {
+              const isMe = (i + 1) === myRank;
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2 text-[12px] py-1.5 px-2 rounded-md ${isMe ? 'bg-gold text-white shadow-[0_2px_8px_rgba(201,123,26,0.4)]' : 'bg-surface'}`}
+                >
+                  <span className={`w-4 font-extrabold ${isMe ? 'text-white' : i === 0 ? 'text-gold' : 'text-ink2'}`}>{i + 1}</span>
+                  {entry.team === 'GB' && <span>🇬🇧</span>}
+                  {entry.team === 'IT' && <span>🇮🇹</span>}
+                  <span className={`flex-1 font-bold truncate ${isMe ? 'text-white' : 'text-ink'}`}>{entry.name}</span>
+                  <span className={`font-extrabold tabular-nums ${isMe ? 'text-white' : 'text-ink'}`}>{fmt(entry.cm)}m</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* The £10 IAP joke */}
       <motion.div
@@ -1723,7 +1796,8 @@ function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
       if (!alive) return;
       if (i >= sequence.length) {
         setShowIdx(-1);
-        setTimeout(() => alive && setPhase('prompt'), 350);
+        // Skip 'prompt' — go directly to 'input' so user knows immediately they can tap
+        setTimeout(() => alive && setPhase('input'), 350);
         return;
       }
       setShowIdx(i);
@@ -1742,12 +1816,7 @@ function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
     return () => { alive = false; };
   }, [phase, sequence, showDuration, gapDuration]);
 
-  // Prompt → input after brief beat
-  useEffect(() => {
-    if (phase !== 'prompt') return;
-    const t = setTimeout(() => setPhase('input'), 1100);
-    return () => clearTimeout(t);
-  }, [phase]);
+  // (Removed prompt phase — showing now goes directly to input)
 
   const handleTap = useCallback((type) => {
     if (phase !== 'input') return;
@@ -1827,7 +1896,7 @@ function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
             </motion.div>
           )}
 
-          {(phase === 'showing' || phase === 'input' || phase === 'prompt') && (
+          {(phase === 'showing' || phase === 'input') && (
             <motion.div
               key="play"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -1839,10 +1908,13 @@ function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
                 <motion.h2
                   key={phase}
                   initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                  className="text-[26px] font-black text-ink tracking-tight"
+                  className="text-[24px] font-black text-ink tracking-tight"
                 >
-                  {phase === 'showing' ? '👀 Watching…' : phase === 'prompt' ? '👇 Now repeat it!' : 'Your turn 👆'}
+                  {phase === 'showing' ? '👀 Watch — DO NOT TAP' : 'Your turn 👆'}
                 </motion.h2>
+                {phase === 'showing' && (
+                  <p className="text-[12px] text-ink2 mt-1 font-bold animate-pulse">Memorise the sequence…</p>
+                )}
                 {phase === 'input' && (
                   <p className="text-[12px] text-ink3 mt-1 font-medium">Tap in the order Nonna showed</p>
                 )}
@@ -1871,6 +1943,7 @@ function MemoryRound({ roundNum, phaseIdx = 0, onComplete }) {
                     whileTap={{ scale: 0.94 }}
                     animate={{
                       scale: phase === 'showing' && sequence[showIdx] === type ? 1.08 : 1,
+                      opacity: phase === 'input' ? 1 : (phase === 'showing' && sequence[showIdx] === type ? 1 : 0.32),
                       boxShadow: phase === 'showing' && sequence[showIdx] === type
                         ? '0 0 0 4px rgba(201,123,26,0.85), 0 0 32px rgba(201,123,26,0.65)'
                         : '0 8px 22px rgba(74,40,24,0.18)',
