@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fdf6e8">
+<title>Chelsea Tiramisu</title>
+<style>
+  :root {
+    --bg: #fdf6e8;
+    --bg-2: #fff8e7;
+    --surface: #ffffff;
+    --surface-2: #fef3d9;
+    --border: rgba(74, 40, 24, 0.1);
+    --border-2: rgba(74, 40, 24, 0.18);
+    --text: #1f1108;
+    --text-2: #7a614a;
+    --text-3: #b8a48a;
+    --gold: #c97b1a;
+    --gold-soft: #f4c771;
+    --green: #10b981;
+    --red: #ef4444;
+    --shadow: 0 4px 16px rgba(74, 40, 24, 0.08);
+    --shadow-lg: 0 12px 40px rgba(74, 40, 24, 0.18);
+    --cocoa: #4a2818;
+    --savoiardi: #e8c897;
+    --mascarpone: #fffaeb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; background: var(--bg); color: var(--text); touch-action: manipulation; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
+  button { touch-action: manipulation; font-family: inherit; }
+  #game { position: fixed; inset: 0; display: flex; flex-direction: column; }
+
+  #stripe { position: absolute; top: 0; left: 0; right: 0; height: 3px; display: flex; z-index: 5; pointer-events: none; }
+  #stripe span { flex: 1; }
+  #stripe span:nth-child(1) { background: #009246; }
+  #stripe span:nth-child(2) { background: #f1f2f1; }
+  #stripe span:nth-child(3) { background: #ce2b37; }
+
+  header { padding: 18px 18px 14px; background: var(--bg); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; z-index: 10; }
+  .title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+  .multiplier-wrap { display: flex; justify-content: center; }
+  #multiplier { font-size: 16px; font-weight: 800; padding: 6px 14px; border-radius: 100px; background: var(--surface-2); color: var(--text-2); transition: background 0.3s, color 0.3s, box-shadow 0.3s; letter-spacing: -0.3px; font-variant-numeric: tabular-nums; }
+  #multiplier.t1 { background: var(--surface-2); color: var(--text-2); }
+  #multiplier.t2 { background: var(--gold-soft); color: var(--cocoa); }
+  #multiplier.t3 { background: var(--gold); color: #fff; box-shadow: 0 4px 14px rgba(201,123,26,0.35); }
+  #multiplier.t4 { background: linear-gradient(90deg, #f59e0b, #ef4444); color: #fff; box-shadow: 0 4px 18px rgba(239,68,68,0.45); }
+  #multiplier.bump { animation: bumpPulse 0.4s ease-out; }
+  @keyframes bumpPulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  .meters { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .meters-row { display: flex; align-items: baseline; gap: 4px; }
+  .length-num { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.6px; font-variant-numeric: tabular-nums; line-height: 1; transition: transform 0.2s ease-out; }
+  .length-num.bump { animation: lengthBump 0.4s ease-out; }
+  @keyframes lengthBump { 0%, 100% { transform: scale(1); color: var(--text); } 50% { transform: scale(1.18); color: var(--gold); } }
+  .length-unit { font-size: 11px; color: var(--text-2); font-weight: 600; }
+  .hearts { font-size: 12px; color: var(--red); letter-spacing: 1.5px; transition: transform 0.3s; }
+  .hearts.lose { animation: heartLose 0.5s ease-out; }
+  @keyframes heartLose { 0% { transform: scale(1); } 30% { transform: scale(1.4); } 100% { transform: scale(1); } }
+  .hearts .empty { color: var(--text-3); }
+
+  #stage { flex: 1; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 35%, var(--bg-2) 0%, var(--bg) 80%); }
+  #stage.shake { animation: shake 0.35s ease-out; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+  /* Red flash on miss */
+  #flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 28; box-shadow: inset 0 0 80px 20px rgba(239, 68, 68, 0.6); }
+  #flash.fire { animation: flashFire 0.4s ease-out; }
+  @keyframes flashFire { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* PROGRESS */
+  #progress { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 6; }
+  #progress-row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 1.4px; font-weight: 700; margin-bottom: 8px; }
+  #progress-status { color: var(--text-2); }
+  #progress-status.broken { color: var(--gold); }
+  #progress-bar { height: 5px; background: rgba(74, 40, 24, 0.08); border-radius: 3px; overflow: hidden; position: relative; }
+  #progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold-soft), var(--gold)); transition: width 0.5s ease-out; border-radius: 3px; }
+  #progress-line { position: absolute; top: -3px; bottom: -3px; left: 91.66%; width: 2px; background: var(--text); border-radius: 1px; opacity: 0.45; }
+  #progress-line::after { content: '275m'; position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--text-2); font-weight: 700; letter-spacing: 0.3px; }
+
+  #phase-label { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 2.2px; font-weight: 700; z-index: 6; }
+  #phase-label .name { color: var(--gold); margin-left: 4px; }
+
+  /* TROUGH */
+  #plank { position: absolute; bottom: 244px; left: 0; right: 0; height: 5px; background: linear-gradient(180deg, #6b4423, #3d2817); z-index: 2; box-shadow: 0 2px 8px rgba(74, 40, 24, 0.25); }
+  #trough-area { position: absolute; bottom: 249px; left: 0; right: 0; height: 78px; overflow: hidden; z-index: 3; pointer-events: none; }
+  #trough-track { position: absolute; bottom: 0; left: 0; height: 78px; display: flex; align-items: flex-end; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); padding-left: 50%; }
+  .slice { width: 26px; height: 64px; flex-shrink: 0; position: relative; display: flex; flex-direction: column; justify-content: flex-end; margin-right: 1px; animation: slicePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); filter: drop-shadow(0 2px 4px rgba(74, 40, 24, 0.15)); }
+  .slice.golden { animation: slicePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), goldGlow 1.4s ease-out; filter: drop-shadow(0 2px 6px rgba(251, 191, 36, 0.6)); }
+  @keyframes goldGlow { 0% { filter: drop-shadow(0 0 0px rgba(251,191,36,0)); } 30% { filter: drop-shadow(0 0 16px rgba(251,191,36,0.95)); } 100% { filter: drop-shadow(0 2px 6px rgba(251, 191, 36, 0.6)); } }
+  @keyframes slicePop { from { transform: translateY(-30px) scale(0.5); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+  .slice-layer { width: 100%; }
+  .slice-layer.lady { height: 14px; background: var(--savoiardi); position: relative; }
+  .slice-layer.lady::before { content: ''; position: absolute; inset: 1px 1px; background: repeating-linear-gradient(90deg, transparent 0, transparent 3px, rgba(74,40,24,0.22) 3px, rgba(74,40,24,0.22) 4px); }
+  .slice-layer.cream { height: 12px; background: var(--mascarpone); border-top: 1px solid rgba(74,40,24,0.06); border-bottom: 1px solid rgba(74,40,24,0.06); }
+  .slice-layer.cocoa { height: 6px; background: var(--cocoa); position: relative; }
+  .slice-layer.cocoa::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle at 25% 50%, rgba(0,0,0,0.5) 0.5px, transparent 1.5px), radial-gradient(circle at 75% 30%, rgba(255,255,255,0.18) 0.5px, transparent 1.5px); }
+  .garnish { position: absolute; top: -7px; left: 50%; transform: translateX(-50%); font-size: 11px; line-height: 1; }
+
+  /* BUILDER */
+  #builder-area { position: absolute; bottom: 252px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+  #builder { width: 60px; height: 76px; display: flex; flex-direction: column; justify-content: flex-end; filter: drop-shadow(0 4px 8px rgba(74, 40, 24, 0.2)); }
+  .build-layer { width: 100%; animation: buildDrop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: bottom; }
+  @keyframes buildDrop { from { transform: translateY(-50px) scale(0.6); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+  .build-layer.lady { height: 16px; background: var(--savoiardi); position: relative; }
+  .build-layer.lady::before { content: ''; position: absolute; inset: 2px 3px; background: repeating-linear-gradient(90deg, transparent, transparent 4px, rgba(74,40,24,0.22) 4px, rgba(74,40,24,0.22) 5px); }
+  .build-layer.cream { height: 14px; background: var(--mascarpone); position: relative; border-top: 1px solid rgba(74,40,24,0.06); border-bottom: 1px solid rgba(74,40,24,0.06); }
+  .build-layer.cream::before { content: ''; position: absolute; top: -2px; left: 0; right: 0; height: 4px; background: radial-gradient(circle at 25% 50%, var(--mascarpone) 2px, transparent 3px), radial-gradient(circle at 50% 50%, var(--mascarpone) 2px, transparent 3px), radial-gradient(circle at 75% 50%, var(--mascarpone) 2px, transparent 3px); }
+  .build-layer.cocoa { height: 8px; background: var(--cocoa); position: relative; }
+  .build-layer.cocoa::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle at 15% 50%, rgba(255,255,255,0.2) 1px, transparent 2px), radial-gradient(circle at 50% 30%, rgba(0,0,0,0.5) 1px, transparent 2px), radial-gradient(circle at 80% 70%, rgba(0,0,0,0.5) 1px, transparent 2px); }
+  .build-layer.perfect { animation: buildDrop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), glow 0.7s ease-out; }
+  .build-layer.miss { opacity: 0.35; filter: grayscale(0.7); }
+  @keyframes glow { 0%, 100% { box-shadow: 0 0 0 rgba(201,123,26,0); } 50% { box-shadow: 0 0 22px 4px rgba(201,123,26,0.85); } }
+  #builder.complete { animation: complete 0.45s ease-out; }
+  #builder.golden { animation: goldenComplete 0.7s ease-out; }
+  @keyframes complete { 0% { transform: scale(1); } 30% { transform: scale(1.12); filter: brightness(1.2); } 100% { transform: scale(1); } }
+  @keyframes goldenComplete { 0% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 transparent); } 30% { transform: scale(1.18); filter: brightness(1.4) drop-shadow(0 0 24px gold); } 100% { transform: scale(1); filter: brightness(1) drop-shadow(0 4px 8px rgba(74, 40, 24, 0.2)); } }
+  #builder-base { width: 70px; height: 5px; background: linear-gradient(180deg, #6b4423, #3d2817); border-radius: 2px; box-shadow: 0 2px 6px rgba(74, 40, 24, 0.25); }
+
+  /* DOTS */
+  #dots { position: absolute; bottom: 200px; left: 0; right: 0; display: flex; justify-content: center; gap: 9px; z-index: 6; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(74, 40, 24, 0.15); transition: all 0.25s; }
+  .dot.done { background: var(--gold); }
+  .dot.done.perfect { background: var(--green); }
+  .dot.current { background: var(--gold); box-shadow: 0 0 0 4px rgba(201,123,26,0.2); transform: scale(1.5); }
+
+  /* METER */
+  #meter-wrap { position: absolute; bottom: 152px; left: 16px; right: 16px; z-index: 6; }
+  #meter { height: 40px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; position: relative; box-shadow: var(--shadow); }
+  #meter-zones { position: absolute; inset: 0; display: flex; }
+  .zone { height: 100%; transition: width 0.4s ease-out; }
+  .zone.bad { background: rgba(239, 68, 68, 0.12); }
+  .zone.good { background: rgba(244, 199, 113, 0.28); }
+  .zone.perfect { background: rgba(16, 185, 129, 0.25); box-shadow: inset 0 0 14px rgba(16, 185, 129, 0.3); }
+  #meter-marker { position: absolute; top: 5px; bottom: 5px; width: 4px; background: var(--text); box-shadow: 0 0 10px rgba(31, 17, 8, 0.5); left: 0; border-radius: 2px; }
+
+  /* TAP BUTTON */
+  #tap { position: absolute; bottom: 0; left: 0; right: 0; height: 130px; padding: 14px 16px calc(20px + env(safe-area-inset-bottom)); display: flex; align-items: stretch; z-index: 7; background: linear-gradient(0deg, var(--bg) 65%, transparent); }
+  #tap-btn { flex: 1; border: none; border-radius: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 20px; transition: transform 0.08s ease, opacity 0.08s, box-shadow 0.3s; font-family: inherit; position: relative; overflow: hidden; box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18); }
+  #tap-btn:active { transform: scale(0.98); opacity: 0.92; box-shadow: 0 4px 12px rgba(74, 40, 24, 0.16); }
+  #tap-btn.lady { background: linear-gradient(180deg, #f0d4a4 0%, #d4a574 100%); color: var(--cocoa); }
+  #tap-btn.cream { background: linear-gradient(180deg, #fffbe6 0%, #f5e6c8 100%); color: var(--cocoa); border: 1px solid var(--border-2); }
+  #tap-btn.cocoa { background: linear-gradient(180deg, #6b3d1f 0%, #3d2817 100%); color: var(--mascarpone); }
+  #tap-btn.tut-glow { animation: tapGlow 1.4s ease-in-out infinite; }
+  @keyframes tapGlow { 0%, 100% { box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18), 0 0 0 0 rgba(201,123,26,0.6); } 50% { box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18), 0 0 0 14px rgba(201,123,26,0); } }
+  #tap-icon { font-size: 38px; line-height: 1; }
+  #tap-text { display: flex; flex-direction: column; align-items: flex-start; }
+  #tap-name { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.1; }
+  #tap-hint { font-size: 11px; font-weight: 600; opacity: 0.68; letter-spacing: 0.3px; margin-top: 2px; }
+
+  /* ESPRESSO */
+  #espresso { position: absolute; bottom: 152px; right: 16px; width: 46px; height: 46px; border-radius: 50%; background: var(--cocoa); border: 2px solid var(--gold); display: none; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-shadow: 0 6px 18px rgba(201, 123, 26, 0.4), 0 0 0 4px rgba(201, 123, 26, 0.15); animation: bounceE 1.6s ease-in-out infinite; z-index: 9; }
+  #espresso.show { display: flex; }
+  #espresso .badge { position: absolute; top: -5px; right: -5px; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); }
+  @keyframes bounceE { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+  /* SINGLE BIG TOAST — bigger, longer, replace not stack */
+  #toast { position: absolute; top: 92px; left: 50%; transform: translateX(-50%) translateY(-12px); padding: 12px 22px; background: var(--text); color: var(--bg); border-radius: 100px; font-weight: 800; font-size: 15px; opacity: 0; pointer-events: none; z-index: 20; box-shadow: var(--shadow-lg); white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; transition: opacity 0.25s ease, transform 0.25s ease; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.green { background: var(--green); color: #fff; }
+  #toast.red { background: var(--red); color: #fff; }
+  #toast.gold { background: var(--gold); color: #fff; }
+  #toast.golden-slice { background: linear-gradient(90deg, #fbbf24, #f59e0b); color: #fff; box-shadow: 0 8px 24px rgba(251,191,36,0.55); font-size: 16px; padding: 13px 26px; }
+
+  /* TUTORIAL HINTS — inline pointer + meter callout */
+  #hint-pointer { position: absolute; bottom: 168px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 23; display: none; flex-direction: column; align-items: center; gap: 6px; animation: hintBounce 0.9s ease-in-out infinite; }
+  #hint-pointer.show { display: flex; }
+  #hint-pointer .arrow { font-size: 38px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(201,123,26,0.5)); }
+  #hint-pointer .label { background: var(--gold); color: #fff; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 800; letter-spacing: 0.3px; box-shadow: 0 6px 18px rgba(201,123,26,0.5); white-space: nowrap; }
+  @keyframes hintBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-12px); } }
+
+  #hint-meter { position: absolute; bottom: 200px; left: 16px; right: 16px; pointer-events: none; z-index: 23; display: none; align-items: center; justify-content: center; gap: 8px; }
+  #hint-meter.show { display: flex; }
+  #hint-meter .label { background: var(--green); color: #fff; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 800; letter-spacing: 0.2px; box-shadow: 0 6px 18px rgba(16,185,129,0.45); }
+
+  /* MILESTONE BANNER (auto-fade for small milestones) */
+  #milestone { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 8px; z-index: 25; pointer-events: none; }
+  #milestone.show { display: flex; animation: msFade 2.6s forwards; }
+  @keyframes msFade { 0% { opacity: 0; } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  #milestone-text { font-size: 38px; font-weight: 900; color: var(--gold); text-shadow: 0 4px 16px rgba(201, 123, 26, 0.4); letter-spacing: -0.5px; animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; padding: 0 20px; }
+  #milestone-sub { font-size: 14px; color: var(--text); padding: 0 30px; text-align: center; font-weight: 600; }
+  @keyframes pop-in { from { transform: scale(0.3); } to { transform: scale(1); } }
+
+  .particle { position: absolute; pointer-events: none; font-size: 16px; animation: pop 0.9s ease-out forwards; z-index: 22; }
+  @keyframes pop { 0% { transform: translate(0,0) scale(0.5); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(1.2); opacity: 0; } }
+
+  /* MODAL */
+  .modal { position: absolute; inset: 0; background: rgba(31, 17, 8, 0.45); display: none; align-items: center; justify-content: center; z-index: 60; padding: 20px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); animation: fadeIn 0.3s; }
+  .modal.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 26px; padding: 28px 22px 20px; text-align: center; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); max-height: 92vh; overflow-y: auto; }
+  @keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-emoji { font-size: 48px; margin-bottom: 4px; line-height: 1; }
+  .modal-card h2 { font-size: 28px; font-weight: 800; color: var(--text); margin-bottom: 4px; letter-spacing: -0.6px; }
+  .modal-sub { font-size: 11px; color: var(--gold); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; }
+  .modal-tag { font-size: 14px; color: var(--text); margin-bottom: 18px; line-height: 1.5; padding: 0 4px; font-weight: 400; }
+  .modal-tag b { color: var(--gold); font-weight: 700; }
+  .goal-card { background: var(--surface-2); border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 14px; text-align: left; }
+  .goal-icon { font-size: 30px; }
+  .goal-text { flex: 1; }
+  .goal-label { font-size: 10px; color: var(--text-3); font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 2px; }
+  .goal-value { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+  .goal-value .vs { color: var(--text-2); font-size: 11px; font-weight: 600; margin-left: 6px; }
+  .how { text-align: left; padding: 0; list-style: none; margin: 0 0 20px; }
+  .how li { font-size: 13px; color: var(--text); margin-bottom: 12px; display: flex; gap: 12px; line-height: 1.45; }
+  .how li:last-child { margin-bottom: 0; }
+  .how .ic { font-size: 22px; flex: 0 0 30px; text-align: center; line-height: 1.3; }
+  .how b { color: var(--gold); font-weight: 700; }
+  .modal-btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 8px; transition: transform 0.1s, opacity 0.1s; font-family: inherit; }
+  .modal-btn.primary { background: var(--cocoa); color: var(--mascarpone); }
+  .modal-btn.ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border-2); }
+  .modal-btn:active { transform: scale(0.97); opacity: 0.9; }
+
+  /* PAUSE MODAL — phase up + big milestones (uses .modal styling but with celebratory flavor) */
+  .pause-card { background: var(--surface); border: 2px solid var(--gold); border-radius: 26px; padding: 32px 24px 22px; text-align: center; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg), 0 0 0 8px rgba(201,123,26,0.1); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .pause-card.celebrate { background: linear-gradient(180deg, #fff8e7, #fef3d9); }
+  .pause-emoji { font-size: 64px; line-height: 1; margin-bottom: 6px; animation: pulseEmoji 1.5s ease-in-out infinite; }
+  @keyframes pulseEmoji { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+  .pause-label { font-size: 11px; color: var(--gold); font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .pause-card h2 { font-size: 32px; font-weight: 900; color: var(--text); margin-bottom: 6px; letter-spacing: -0.7px; }
+  .pause-card p { font-size: 14px; color: var(--text-2); margin-bottom: 22px; line-height: 1.45; padding: 0 8px; font-weight: 500; }
+
+  /* GAME OVER */
+  #gameover { position: absolute; inset: 0; background: rgba(253, 246, 232, 0.94); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px; z-index: 30; padding: 24px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  #gameover.show { display: flex; }
+  #gameover h2 { font-size: 26px; font-weight: 800; color: var(--text); text-align: center; letter-spacing: -0.5px; }
+  #gameover .final-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+  #gameover .final { font-size: 64px; font-weight: 900; color: var(--gold); letter-spacing: -1.8px; line-height: 1; font-variant-numeric: tabular-nums; }
+  #gameover .stars { font-size: 26px; letter-spacing: 4px; }
+  #gameover p { font-size: 14px; text-align: center; color: var(--text-2); line-height: 1.5; max-width: 320px; font-weight: 500; }
+  #gameover .best-row { font-size: 12px; color: var(--text-2); display: flex; gap: 12px; align-items: center; padding: 8px 14px; background: var(--surface-2); border-radius: 100px; font-weight: 700; }
+  #gameover .best-row b { color: var(--text); font-weight: 800; }
+  #gameover .new-best { color: var(--gold); font-weight: 800; padding: 4px 10px; background: rgba(201,123,26,0.12); border-radius: 100px; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .restart, .share { padding: 13px 32px; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .restart { background: var(--cocoa); color: var(--mascarpone); border: none; }
+  .share { background: transparent; color: var(--text-2); border: 1px solid var(--border-2); padding: 11px 24px; font-size: 12px; }
+  .restart:active, .share:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="stripe"><span></span><span></span><span></span></div>
+
+  <header>
+    <div class="title">🍰 Chelsea Tiramisu</div>
+    <div class="multiplier-wrap"><div id="multiplier" class="t1">×1</div></div>
+    <div class="meters">
+      <div class="meters-row"><span class="length-num" id="length">0.0</span><span class="length-unit">m</span></div>
+      <div class="hearts" id="hearts">♥♥♥</div>
+    </div>
+  </header>
+
+  <div id="stage">
+    <div id="flash"></div>
+
+    <div id="progress">
+      <div id="progress-row">
+        <span>0m</span>
+        <span id="progress-status">Goal 300m</span>
+        <span>300m</span>
+      </div>
+      <div id="progress-bar">
+        <div id="progress-fill"></div>
+        <div id="progress-line"></div>
+      </div>
+    </div>
+
+    <div id="phase-label">Phase 1<span class="name">Apprentice</span></div>
+
+    <div id="plank"></div>
+    <div id="trough-area"><div id="trough-track"></div></div>
+
+    <div id="builder-area">
+      <div id="builder"></div>
+      <div id="builder-base"></div>
+    </div>
+
+    <div id="dots"></div>
+
+    <div id="meter-wrap">
+      <div id="meter">
+        <div id="meter-zones">
+          <div class="zone bad"></div>
+          <div class="zone good"></div>
+          <div class="zone perfect"></div>
+          <div class="zone good"></div>
+          <div class="zone bad"></div>
+        </div>
+        <div id="meter-marker"></div>
+      </div>
+    </div>
+
+    <div id="hint-meter"><div class="label">Tap when GREEN ✨</div></div>
+    <div id="hint-pointer"><div class="arrow">👇</div><div class="label">TAP HERE</div></div>
+
+    <div id="toast"></div>
+
+    <div id="milestone">
+      <div id="milestone-text"></div>
+      <div id="milestone-sub"></div>
+    </div>
+
+    <div id="espresso"><span>☕</span><span class="badge" id="esp-badge">1</span></div>
+
+    <div id="tap">
+      <button id="tap-btn" class="lady">
+        <span id="tap-icon">🍪</span>
+        <span id="tap-text">
+          <span id="tap-name">Savoiardi</span>
+          <span id="tap-hint">Tap on green</span>
+        </span>
+      </button>
+    </div>
+
+    <div id="welcome" class="modal show">
+      <div class="modal-card">
+        <div class="modal-emoji">🍰</div>
+        <h2>Chelsea Tiramisu</h2>
+        <div class="modal-sub">Chelsea Town Hall · Live Now</div>
+        <p class="modal-tag">You're at <b>Chelsea Town Hall</b>. Build a <b>300m tiramisu</b> and break the 275m world record.</p>
+        <ul class="how">
+          <li><span class="ic">👆</span><span>One button. <b>Tap when the marker hits green</b> for perfetto.</span></li>
+          <li><span class="ic">🔥</span><span>Stack perfetti to build a <b>multiplier</b> — up to ×8. One miss resets it.</span></li>
+          <li><span class="ic">📈</span><span>Five phases get harder fast: <b>Apprentice → Leggenda</b>.</span></li>
+        </ul>
+        <button class="modal-btn primary" onclick="startGame(true)">Show me how</button>
+        <button class="modal-btn ghost" onclick="startGame(false)">Skip — let's go</button>
+      </div>
+    </div>
+
+    <div id="pause" class="modal">
+      <div class="modal-card pause-card celebrate">
+        <div class="pause-emoji" id="pause-emoji">🎉</div>
+        <div class="pause-label" id="pause-label">PHASE UP</div>
+        <h2 id="pause-title">Pasticcere</h2>
+        <p id="pause-sub">The meter speeds up. Stay sharp.</p>
+        <button class="modal-btn primary" onclick="resumeGame()">Continua</button>
+      </div>
+    </div>
+
+    <div id="gameover">
+      <h2 id="go-title">Servizio finito</h2>
+      <div class="final-label">Final length</div>
+      <div class="final" id="final-length">0.0m</div>
+      <div class="stars" id="stars"></div>
+      <div class="best-row" id="best-row">Best: <b>0.0m</b></div>
+      <p id="verdict"></p>
+      <button class="restart" onclick="restart()">Play again</button>
+      <button class="share" onclick="share()">Share score</button>
+    </div>
+  </div>
+</div>
+<script>
+const RECIPE = ['lady','cream','lady','cream','cocoa'];
+const NAMES = { lady:'Savoiardi', cream:'Mascarpone', cocoa:'Cacao' };
+const ICONS = { lady:'🍪', cream:'🥛', cocoa:'🍫' };
+
+const GOAL_CM = 30000;
+const RECORD_CM = 27500;
+const POINTS = { perfect: 40, good: 18, bad: 0 };
+
+const PHASES = [
+  { name: 'Apprentice', threshold: 0,     speed: 0.6,  green: 36, sub: 'Wide green zone, slow meter — get the timing' },
+  { name: 'Pasticcere', threshold: 800,   speed: 1.0,  green: 27, sub: 'The meter speeds up. Stay sharp.' },
+  { name: 'Maestro',    threshold: 3000,  speed: 1.4,  green: 20, sub: 'Faster, tighter — perfetti now matter more' },
+  { name: 'Virtuoso',   threshold: 9000,  speed: 1.85, green: 15, sub: 'Punishing pace. Save your espresso!' },
+  { name: 'Leggenda',   threshold: 20000, speed: 2.4,  green: 11, sub: 'Mastery only. The crowd holds its breath.' },
+];
+
+const MILESTONES = [
+  { m: 30, text: 'Trenta!', sub: 'The Sloane Square queue notices', garnish: '🍒' },
+  { m: 80, text: 'Ottanta!', sub: "King's Road traffic is stopped", garnish: '🍓' },
+  { m: 150, text: '150 metri!', sub: 'Saatchi Gallery wants to display it', garnish: '🍫', heart: true },
+  { m: 220, text: 'Duecentoventi!', sub: 'Peter Jones runs out of mascarpone' },
+  // Pause-and-celebrate moments
+  { m: 275, text: '🏆 Record broken!', sub: 'Stamford Bridge cheers from across town!', heart: true, pause: true, emoji: '🏆', label: 'WORLD RECORD' },
+  { m: 300, text: '🏆 300 metri!', sub: 'Chelsea pensioners weep with pride!', heart: true, pause: true, emoji: '👑', label: 'GOAL REACHED' },
+  { m: 400, text: 'Quattrocento!', sub: 'Cadogan Estate offers you a flat (£8m)' },
+];
+
+// Toast pools — used sparingly (only on key events)
+const JOKES = {
+  bad: [
+    'Sloppy! Cadogan disapproves',
+    'Madonna mia, what a mess',
+    'Ma che fai?! Disastro!',
+    "Even Pret's tiramisu beat that",
+    'The pensioners gasp in horror',
+    'Peter Jones returns it',
+    'Madonna santa, riprova!',
+    "Worse than the King's Road traffic",
+  ],
+  slice: [
+    'Una fetta perfetta!',
+    'Slice complete, darling',
+    'Sloane mums approve',
+    'The Bluebird applauds',
+    "Fit for the King's Road",
+    'Buonissimo, old bean',
+    'Cadogan estate impressed',
+    'Avanti — più tiramisu!',
+    'Posher than Granger & Co',
+  ],
+  golden: [
+    '🌟 GOLDEN SLICE — Vogue Italia approves!',
+    '🌟 5/5 PERFETTI — La Stampa front page!',
+    '🌟 BELLISSIMA — Saatchi takes a photo!',
+    '🌟 PERFETTO — Eataly wants the recipe!',
+    '🌟 LEGGENDARIA — King Charles applauds!',
+  ],
+  multUp: {
+    2: ['×2 MULTIPLIER!', '×2 — On a roll, darling!'],
+    3: ['×3 — Magnifico streak!', '×3 — Sloane Square impressed'],
+    5: ['×5 — Bellissimo combo!', '×5 — Saatchi takes notes'],
+    8: ['×8 LEGGENDARIO!', '×8 — Vogue is calling!'],
+  },
+};
+
+let state, hintActive = false, hintStage = 0, paused = false;
+const $ = id => document.getElementById(id);
+
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function fmt(cm) { return (cm / 100).toFixed(cm < 1000 ? 2 : 1); }
+
+function multTier(combo) {
+  if (combo >= 12) return { mult: 8, tier: 4, label: '×8' };
+  if (combo >= 8) return { mult: 5, tier: 3, label: '×5' };
+  if (combo >= 5) return { mult: 3, tier: 3, label: '×3' };
+  if (combo >= 2) return { mult: 2, tier: 2, label: '×2' };
+  return { mult: 1, tier: 1, label: '×1' };
+}
+
+function startGame(showHints) {
+  $('welcome').classList.remove('show');
+  init();
+  if (showHints) startHints();
+}
+
+function init() {
+  state = {
+    slices: 0, length: 0, lives: 3,
+    layerIdx: 0, sliceLayers: [],
+    markerPos: 0, markerDir: 1,
+    phaseIdx: -1, speed: PHASES[0].speed, greenW: PHASES[0].green,
+    perfectCombo: 0, espresso: 0, espressoActive: 0,
+    milestonesShown: new Set(), garnishes: [], running: true,
+    seenMultTiers: new Set([1]),
+  };
+  paused = false;
+  $('trough-track').innerHTML = ''; $('trough-track').style.transform = 'translateX(0)';
+  $('builder').innerHTML = '';
+  $('gameover').classList.remove('show');
+  $('pause').classList.remove('show');
+  $('espresso').classList.remove('show');
+  endHints();
+  applyPhase(true);
+  renderDots();
+  updateTapButton();
+  updateMultiplier();
+  updateUI();
+  requestAnimationFrame(tick);
+}
+
+function applyPhase(isInitial) {
+  let idx = 0;
+  for (let i = PHASES.length - 1; i >= 0; i--) if (state.length >= PHASES[i].threshold) { idx = i; break; }
+  if (idx === state.phaseIdx) return false;
+  state.phaseIdx = idx;
+  const p = PHASES[idx];
+  state.speed = p.speed;
+  state.greenW = p.green;
+  $('phase-label').innerHTML = `Phase ${idx + 1}<span class="name">${p.name}</span>`;
+  const g = p.green, y = (100 - g) * 0.35, r = (100 - g - 2*y) / 2;
+  const zs = document.querySelectorAll('#meter-zones .zone');
+  [r, y, g, y, r].forEach((w, i) => zs[i].style.width = w + '%');
+  if (!isInitial) {
+    pauseGame({ emoji: '⚡', label: 'PHASE ' + (idx + 1), title: p.name, sub: p.sub });
+    if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
+    return true;
+  }
+  return false;
+}
+
+function getQuality() {
+  const p = state.markerPos, g = state.greenW;
+  const y = (100 - g) * 0.35, r = (100 - g - 2*y) / 2;
+  const greenStart = r + y, greenEnd = greenStart + g;
+  const goodStart = r, goodEnd = 100 - r;
+  if (p >= greenStart && p <= greenEnd) return 'perfect';
+  if (p >= goodStart && p <= goodEnd) return 'good';
+  return 'bad';
+}
+
+function renderDots() {
+  const c = $('dots'); c.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    if (i < state.layerIdx) {
+      d.classList.add('done');
+      if (state.sliceLayers[i] && state.sliceLayers[i].quality === 'perfect') d.classList.add('perfect');
+    }
+    if (i === state.layerIdx) d.classList.add('current');
+    c.appendChild(d);
+  }
+}
+
+function updateTapButton() {
+  const type = RECIPE[state.layerIdx];
+  const btn = $('tap-btn');
+  // preserve tut-glow class
+  const glow = btn.classList.contains('tut-glow');
+  btn.className = type + (glow ? ' tut-glow' : '');
+  $('tap-icon').textContent = ICONS[type];
+  $('tap-name').textContent = NAMES[type];
+}
+
+function updateMultiplier() {
+  const t = multTier(state.perfectCombo);
+  const el = $('multiplier');
+  const prev = el.textContent;
+  el.textContent = t.label;
+  el.className = 't' + t.tier;
+  if (prev !== t.label) {
+    el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  }
+}
+
+function updateUI(bumpLength) {
+  const el = $('length');
+  el.textContent = fmt(state.length);
+  if (bumpLength) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+  $('hearts').innerHTML = '♥'.repeat(state.lives) + '<span class="empty">' + '♡'.repeat(3 - state.lives) + '</span>';
+  const pct = Math.min(100, (state.length / GOAL_CM) * 100);
+  $('progress-fill').style.width = pct + '%';
+  const m = state.length / 100;
+  const ps = $('progress-status');
+  if (m < 275) { ps.textContent = 'Goal 300m'; ps.classList.remove('broken'); }
+  else if (m < 300) { ps.textContent = '🏆 Record broken!'; ps.classList.add('broken'); }
+  else { ps.textContent = '🏆 300m smashed!'; ps.classList.add('broken'); }
+}
+
+function tick() {
+  if (!state || !state.running || paused) return;
+  let eff = state.speed;
+  if (state.espressoActive > 0) eff *= 0.4;
+  if (hintActive && hintStage === 0) eff *= 0.55; // slow during initial hint
+  state.markerPos += state.markerDir * eff;
+  if (state.markerPos >= 100) { state.markerPos = 100; state.markerDir = -1; }
+  if (state.markerPos <= 0) { state.markerPos = 0; state.markerDir = 1; }
+  $('meter-marker').style.left = state.markerPos + '%';
+  requestAnimationFrame(tick);
+}
+
+function showToast(msg, kind, dur) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = ''; if (kind) t.classList.add(kind);
+  // force reflow to restart transition
+  void t.offsetWidth;
+  t.classList.add('show');
+  clearTimeout(showToast.t);
+  showToast.t = setTimeout(() => t.classList.remove('show'), dur || 2400);
+}
+
+function spawnParticles(x, y, emojis, count) {
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div'); p.className = 'particle';
+    p.textContent = pick(emojis);
+    p.style.left = x + 'px'; p.style.top = y + 'px';
+    p.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px');
+    p.style.setProperty('--dy', (-Math.random() * 80 - 30) + 'px');
+    $('stage').appendChild(p);
+    setTimeout(() => p.remove(), 900);
+  }
+}
+
+function flashRed() {
+  const f = $('flash'); f.classList.remove('fire'); void f.offsetWidth; f.classList.add('fire');
+  const s = $('stage'); s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
+}
+
+function showMilestoneBanner(text, sub) {
+  $('milestone-text').textContent = text; $('milestone-sub').textContent = sub;
+  const m = $('milestone'); m.classList.remove('show'); void m.offsetWidth; m.classList.add('show');
+  if (navigator.vibrate) navigator.vibrate([20, 40, 20, 40, 60]);
+}
+
+function checkMilestones() {
+  const m = state.length / 100;
+  for (const ms of MILESTONES) {
+    if (m >= ms.m && !state.milestonesShown.has(ms.m)) {
+      state.milestonesShown.add(ms.m);
+      if (ms.heart) state.lives = Math.min(3, state.lives + 1);
+      if (ms.garnish) state.garnishes.push(ms.garnish);
+      if (ms.pause) {
+        pauseGame({ emoji: ms.emoji || '🏆', label: ms.label || 'MILESTONE', title: ms.text, sub: ms.sub });
+      } else {
+        showMilestoneBanner(ms.text, ms.sub);
+      }
+    }
+  }
+}
+
+function pauseGame(info) {
+  paused = true;
+  $('pause-emoji').textContent = info.emoji;
+  $('pause-label').textContent = info.label;
+  $('pause-title').textContent = info.title;
+  $('pause-sub').textContent = info.sub;
+  $('pause').classList.add('show');
+}
+
+function resumeGame() {
+  $('pause').classList.remove('show');
+  paused = false;
+  if (state && state.running) requestAnimationFrame(tick);
+}
+
+function tap() {
+  if (!state || !state.running || paused) return;
+  const quality = getQuality();
+  const type = RECIPE[state.layerIdx];
+
+  const prevTier = multTier(state.perfectCombo).tier;
+  if (quality === 'perfect') state.perfectCombo++;
+  else if (quality === 'bad') state.perfectCombo = 0;
+  const m = multTier(state.perfectCombo);
+
+  // Visual layer
+  const layer = document.createElement('div');
+  layer.className = 'build-layer ' + type + (quality === 'perfect' ? ' perfect' : quality === 'bad' ? ' miss' : '');
+  $('builder').insertBefore(layer, $('builder').firstChild);
+  state.sliceLayers.push({ type, quality });
+
+  const pts = POINTS[quality] * m.mult;
+  state.length += pts;
+
+  // Toasts: ONLY on key moments (not every tap)
+  if (quality === 'bad') {
+    state.lives--;
+    flashRed();
+    showToast(pick(JOKES.bad) + ' −1 ♥', 'red', 2500);
+    $('hearts').classList.remove('lose'); void $('hearts').offsetWidth; $('hearts').classList.add('lose');
+    if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+    if (state.lives <= 0) { updateUI(); updateMultiplier(); return endGame(); }
+  } else if (quality === 'perfect') {
+    if (state.perfectCombo > 0 && state.perfectCombo % 5 === 0) {
+      state.espresso++;
+      $('esp-badge').textContent = state.espresso;
+      $('espresso').classList.add('show');
+      showToast('☕ Espresso earned!', 'gold', 2400);
+    } else if (m.tier > prevTier && JOKES.multUp[m.mult]) {
+      // Multiplier tier-up — celebrate
+      showToast(pick(JOKES.multUp[m.mult]), 'green', 2400);
+    }
+    // Otherwise silent — score number bumps in header
+    const r = $('builder').getBoundingClientRect();
+    spawnParticles(r.left + r.width / 2, r.top, ['✨','⭐'], 3);
+    if (navigator.vibrate) navigator.vibrate([10, 15, 10]);
+  } else {
+    // 'good' — silent, score number animates
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+
+  state.layerIdx++;
+  if (state.layerIdx >= 5) completeSlice();
+  else { renderDots(); updateTapButton(); }
+
+  if (state.espressoActive > 0) state.espressoActive--;
+
+  const phaseChanged = applyPhase();
+  checkMilestones();
+  updateUI(quality === 'perfect');
+  updateMultiplier();
+
+  if (hintActive) advanceHint();
+}
+
+function completeSlice() {
+  const builder = $('builder');
+  const allPerfect = state.sliceLayers.every(l => l.quality === 'perfect');
+  builder.classList.add(allPerfect ? 'golden' : 'complete');
+  setTimeout(() => { builder.classList.remove('complete', 'golden'); }, 700);
+
+  state.slices++;
+
+  let bonus = 0;
+  if (allPerfect) {
+    const baseSliceCm = state.sliceLayers.reduce((s, l) => s + POINTS[l.quality] * multTier(state.perfectCombo).mult, 0);
+    bonus = Math.round(baseSliceCm * 0.5);
+    state.length += bonus;
+    showToast(pick(JOKES.golden) + ` +${bonus}cm`, 'golden-slice', 3000);
+    spawnParticles(window.innerWidth / 2, window.innerHeight - 280, ['🌟','✨','⭐','💫','🎉'], 8);
+    if (navigator.vibrate) navigator.vibrate([20, 30, 20, 30, 60]);
+  } else {
+    showToast('🍰 ' + pick(JOKES.slice), 'green', 2200);
+  }
+
+  const slice = document.createElement('div');
+  slice.className = 'slice' + (allPerfect ? ' golden' : '');
+  ['cocoa','cream','lady','cream','lady'].forEach(t => {
+    const l = document.createElement('div'); l.className = 'slice-layer ' + t;
+    slice.appendChild(l);
+  });
+  if (allPerfect) {
+    const g = document.createElement('div'); g.className = 'garnish'; g.textContent = '🌟';
+    slice.appendChild(g);
+  } else if (state.garnishes.length > 0 && Math.random() < 0.5) {
+    const g = document.createElement('div'); g.className = 'garnish';
+    g.textContent = pick(state.garnishes);
+    slice.appendChild(g);
+  }
+  $('trough-track').appendChild(slice);
+
+  const offset = Math.max(0, state.slices * 27 - 100);
+  $('trough-track').style.transform = `translateX(-${offset}px)`;
+
+  setTimeout(() => { builder.innerHTML = ''; }, 700);
+
+  state.layerIdx = 0;
+  state.sliceLayers = [];
+  renderDots();
+  updateTapButton();
+  updateUI(allPerfect);
+}
+
+function useEspresso() {
+  if (!state || state.espresso <= 0 || paused) return;
+  state.espresso--; state.espressoActive = 4;
+  $('esp-badge').textContent = state.espresso;
+  if (state.espresso <= 0) $('espresso').classList.remove('show');
+  showToast('☕ Meter slowed for 4 layers', 'gold', 2200);
+  if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
+}
+
+function getBest() { try { return parseInt(localStorage.getItem('tiramisu_best') || '0', 10); } catch (e) { return 0; } }
+function saveBest(cm) {
+  try {
+    const prev = getBest();
+    if (cm > prev) { localStorage.setItem('tiramisu_best', String(Math.floor(cm))); return true; }
+  } catch (e) {}
+  return false;
+}
+
+function endGame() {
+  state.running = false;
+  $('final-length').textContent = fmt(state.length) + 'm';
+  const m = state.length / 100;
+  let v = '', title = 'Servizio finito', s = 0;
+  if (m < 30) { v = 'Even the Pret next door did better. Riprova!'; s = 1; }
+  else if (m < 100) { v = "Respectable, but King's Road is unimpressed."; s = 2; }
+  else if (m < 220) { v = 'Decent. A Sloane mum gives you a polite nod.'; s = 3; }
+  else if (m < 275) { v = "So close to 275m. La nonna è triste, caro."; s = 3; }
+  else if (m < 300) { title = 'Record broken!'; v = "You beat 275m — but you promised Chelsea 300. Riprova!"; s = 4; }
+  else if (m < 400) { title = '🏆 300 metri!'; v = 'Chelsea Town Hall erupts. The Cadogan Estate names a mews after you.'; s = 5; }
+  else { title = '🏆 Leggenda!'; v = m.toFixed(0) + 'm — beyond legend. Even Stamford Bridge bows.'; s = 5; }
+  $('go-title').textContent = title;
+  $('verdict').textContent = v;
+  $('stars').textContent = '⭐'.repeat(s) + '☆'.repeat(5 - s);
+
+  const isNew = saveBest(state.length);
+  const best = getBest();
+  $('best-row').innerHTML = `Best: <b>${fmt(best)}m</b>` + (isNew ? '<span class="new-best">New PB!</span>' : '');
+
+  $('gameover').classList.add('show');
+}
+
+function restart() { $('gameover').classList.remove('show'); init(); }
+
+async function share() {
+  const m = state.length / 100;
+  const text = `🍰 ${m.toFixed(2)}m tiramisu at Chelsea Town Hall! ${m >= 300 ? '🏆 SMASHED 300m!' : m >= 275 ? '🏆 BROKE THE 275m RECORD!' : `(${(m/300*100).toFixed(0)}% of 300m)`} https://hugo-bramble.github.io/tiramisu-game/`;
+  try {
+    if (navigator.share) await navigator.share({ title: 'Chelsea Tiramisu', text });
+    else { await navigator.clipboard.writeText(text); showToast('Copied!', null, 1800); }
+  } catch (e) {}
+}
+
+/* HINTS — simple just-in-time */
+function startHints() {
+  hintActive = true; hintStage = 0;
+  $('hint-pointer').classList.add('show');
+  $('hint-pointer').querySelector('.label').textContent = 'TAP HERE';
+  $('tap-btn').classList.add('tut-glow');
+  $('hint-meter').classList.add('show');
+}
+
+function advanceHint() {
+  if (!hintActive) return;
+  hintStage++;
+  if (hintStage === 1) {
+    $('hint-pointer').querySelector('.label').textContent = 'TAP ON GREEN';
+  }
+  if (hintStage >= 3) endHints();
+}
+
+function endHints() {
+  hintActive = false;
+  $('hint-pointer').classList.remove('show');
+  $('hint-meter').classList.remove('show');
+  $('tap-btn').classList.remove('tut-glow');
+}
+
+$('tap-btn').addEventListener('touchstart', e => { e.preventDefault(); tap(); }, { passive: false });
+$('tap-btn').addEventListener('click', e => { if (!('ontouchstart' in window)) tap(); });
+$('espresso').addEventListener('touchstart', e => { e.preventDefault(); useEspresso(); }, { passive: false });
+$('espresso').addEventListener('click', e => { if (!('ontouchstart' in window)) useEspresso(); });
+</script>
+</body>
+</html>

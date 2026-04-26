@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: #fdf6e8;
+  color: #1f1108;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+* { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
+button { touch-action: manipulation; font-family: inherit; }
+
+/* Custom keyframes that aren't in Tailwind defaults */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+.shake { animation: shake 0.4s ease-out; }
+
+@keyframes flashRed {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.flash-red {
+  position: absolute; inset: 0; pointer-events: none; z-index: 28;
+  box-shadow: inset 0 0 80px 24px rgba(239, 68, 68, 0.6);
+  animation: flashRed 0.5s ease-out forwards;
+}
+
+@keyframes ringPulse {
+  0%, 100% { box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18), 0 0 0 0 rgba(201,123,26,0.55); }
+  50% { box-shadow: 0 8px 22px rgba(74, 40, 24, 0.18), 0 0 0 16px rgba(201,123,26,0); }
+}
+.tap-pulse { animation: ringPulse 1.5s ease-in-out infinite; }
+
+@keyframes hintBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-12px); }
+}
+.hint-bounce { animation: hintBounce 0.9s ease-in-out infinite; }
+
+@keyframes pulseEmoji {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+.pulse-emoji { animation: pulseEmoji 1.5s ease-in-out infinite; }
+
+/* Italian flag stripe */
+.flag-stripe { display: flex; }
+.flag-stripe span { flex: 1; height: 100%; }
+.flag-stripe span:nth-child(1) { background: #009246; }
+.flag-stripe span:nth-child(2) { background: #f1f2f1; }
+.flag-stripe span:nth-child(3) { background: #ce2b37; }
+
+/* Tiramisu visuals */
+.layer-lady {
+  background: #e8c897;
+  position: relative;
+}
+.layer-lady::before {
+  content: ''; position: absolute; inset: 1px 2px;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent 3px, rgba(74,40,24,0.22) 3px, rgba(74,40,24,0.22) 4px);
+}
+.layer-cream {
+  background: #fffaeb;
+  border-top: 1px solid rgba(74,40,24,0.06);
+  border-bottom: 1px solid rgba(74,40,24,0.06);
+}
+.layer-cocoa {
+  background: #4a2818; position: relative;
+}
+.layer-cocoa::after {
+  content: ''; position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 25% 50%, rgba(0,0,0,0.5) 0.5px, transparent 1.5px),
+    radial-gradient(circle at 75% 30%, rgba(255,255,255,0.18) 0.5px, transparent 1.5px);
+}
+
+.build-lady { height: 16px; }
+.build-cream { height: 14px; }
+.build-cream::before {
+  content: ''; position: absolute; top: -2px; left: 0; right: 0; height: 4px;
+  background:
+    radial-gradient(circle at 25% 50%, #fffaeb 2px, transparent 3px),
+    radial-gradient(circle at 50% 50%, #fffaeb 2px, transparent 3px),
+    radial-gradient(circle at 75% 50%, #fffaeb 2px, transparent 3px);
+}
+.build-cocoa { height: 8px; }
+
+.slice-lady { height: 14px; }
+.slice-cream { height: 12px; }
+.slice-cocoa { height: 6px; }
+
+.plank {
+  background: linear-gradient(180deg, #6b4423, #3d2817);
+  box-shadow: 0 2px 8px rgba(74, 40, 24, 0.25);
+}
+
+/* Meter zones */
+.zone-bad { background: rgba(239, 68, 68, 0.14); }
+.zone-good { background: rgba(244, 199, 113, 0.30); }
+.zone-perfect {
+  background: rgba(16, 185, 129, 0.28);
+  box-shadow: inset 0 0 14px rgba(16, 185, 129, 0.32);
+}
+
+/* Tap button gradients */
+.btn-lady { background: linear-gradient(180deg, #f0d4a4 0%, #d4a574 100%); color: #4a2818; }
+.btn-cream { background: linear-gradient(180deg, #fffbe6 0%, #f5e6c8 100%); color: #4a2818; border: 1px solid rgba(74, 40, 24, 0.18); }
+.btn-cocoa { background: linear-gradient(180deg, #6b3d1f 0%, #3d2817 100%); color: #fffaeb; }
