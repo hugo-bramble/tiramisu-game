@@ -31,6 +31,26 @@ function tone(freq, duration, type = 'sine', vol = 0.18, attack = 0.005) {
   } catch (e) {}
 }
 
+// Tone with frequency sweep (pitch slide for richer feel)
+function sweep(freqStart, freqEnd, duration, type = 'sine', vol = 0.16) {
+  try {
+    const c = getCtx();
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = type;
+    const now = c.currentTime;
+    o.frequency.setValueAtTime(freqStart, now);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), now + duration);
+    o.connect(g);
+    g.connect(masterGain);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(vol, now + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    o.start(now);
+    o.stop(now + duration + 0.05);
+  } catch (e) {}
+}
+
 function noise(duration, vol = 0.08, hpFreq = 200) {
   try {
     const c = getCtx();
@@ -58,37 +78,69 @@ function chord(freqs, duration, type = 'sine', vol = 0.12) {
 
 export const sfx = {
   perfect: () => {
-    tone(880, 0.08, 'sine', 0.22);
-    setTimeout(() => tone(1320, 0.14, 'sine', 0.16), 28);
+    // Crisp two-note ascending stab — feels like a "ding!"
+    tone(987.77, 0.06, 'sine', 0.22);
+    setTimeout(() => tone(1318.51, 0.13, 'sine', 0.18), 22);
+    setTimeout(() => tone(1975.53, 0.08, 'sine', 0.08), 40);
   },
-  good: () => tone(560, 0.1, 'sine', 0.14),
+  good: () => {
+    tone(659.25, 0.09, 'sine', 0.16);
+    setTimeout(() => tone(783.99, 0.06, 'sine', 0.10), 35);
+  },
   miss: () => {
-    tone(180, 0.28, 'sawtooth', 0.18, 0.002);
-    noise(0.18, 0.08);
+    sweep(220, 90, 0.32, 'sawtooth', 0.18);
+    noise(0.16, 0.08, 300);
   },
   slice: () => {
-    tone(620, 0.1, 'sine', 0.18);
-    setTimeout(() => tone(880, 0.14, 'sine', 0.16), 35);
+    // Satisfying "thunk" + bell
+    tone(440, 0.08, 'sine', 0.20);
+    setTimeout(() => tone(659.25, 0.12, 'sine', 0.16), 28);
+    setTimeout(() => tone(880, 0.16, 'sine', 0.12), 60);
   },
   golden: () => {
-    chord([523, 659, 784, 988, 1175], 0.22, 'sine', 0.18);
+    // Triumphant ascending arpeggio
+    [523.25, 659.25, 783.99, 987.77, 1318.51].forEach((f, i) =>
+      setTimeout(() => tone(f, 0.22, 'sine', 0.20 - i * 0.015), i * 55)
+    );
+    // Sparkle sheen
+    setTimeout(() => sweep(2000, 4000, 0.4, 'sine', 0.07), 100);
   },
   multUp: (tier) => {
-    const root = [440, 587, 698, 880][Math.min(3, Math.max(0, tier - 1))];
-    tone(root, 0.12, 'triangle', 0.2);
-    setTimeout(() => tone(root * 1.5, 0.16, 'triangle', 0.16), 60);
+    // Rising chord — gets more intense per tier
+    const roots = [440, 523.25, 659.25, 880];
+    const root = roots[Math.min(3, Math.max(0, tier - 1))];
+    tone(root, 0.1, 'triangle', 0.18);
+    setTimeout(() => tone(root * 1.25, 0.12, 'triangle', 0.16), 50);
+    setTimeout(() => tone(root * 1.5, 0.15, 'triangle', 0.14), 100);
+    if (tier >= 3) setTimeout(() => tone(root * 2, 0.18, 'triangle', 0.12), 150);
   },
   espresso: () => {
-    tone(380, 0.08, 'sine', 0.16);
-    setTimeout(() => tone(580, 0.1, 'sine', 0.14), 50);
-    setTimeout(() => tone(780, 0.12, 'sine', 0.12), 100);
+    // Coffee machine vibe — short bursts
+    tone(380, 0.06, 'sawtooth', 0.10);
+    setTimeout(() => sweep(600, 1200, 0.18, 'sine', 0.14), 30);
+    setTimeout(() => tone(1500, 0.06, 'sine', 0.10), 100);
   },
   phase: () => {
-    chord([392, 523, 659, 784, 988], 0.2, 'sine', 0.18);
+    // Cinematic phase-up swell
+    [392, 523.25, 659.25, 783.99, 987.77].forEach((f, i) =>
+      setTimeout(() => tone(f, 0.24, 'sine', 0.18 - i * 0.02), i * 70)
+    );
+    setTimeout(() => sweep(200, 800, 0.5, 'triangle', 0.10), 40);
   },
-  tap: () => tone(1400, 0.03, 'sine', 0.05),
+  tap: () => tone(1400, 0.025, 'sine', 0.05),
   record: () => {
-    chord([523, 659, 784, 988, 1175, 1318], 0.3, 'sine', 0.22);
+    // Triumphant fanfare for record breaking
+    [523.25, 659.25, 783.99, 987.77, 1174.66, 1318.51].forEach((f, i) =>
+      setTimeout(() => tone(f, 0.32, 'sine', 0.22 - i * 0.02), i * 45)
+    );
+    // Bass support
+    setTimeout(() => tone(130.81, 0.6, 'triangle', 0.12), 0);
+    setTimeout(() => tone(196, 0.6, 'triangle', 0.12), 100);
+  },
+  // Memory mode ingredient highlight (different from tap)
+  memShow: (idx) => {
+    const freqs = [659.25, 783.99, 987.77];
+    tone(freqs[idx % 3], 0.18, 'sine', 0.22);
   },
 };
 

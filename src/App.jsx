@@ -124,27 +124,43 @@ function saveBest(cm) {
 }
 
 // ─── CONFETTI HELPERS ────────────────────────────────────────────────────────
+// Tiramisu-themed confetti palette
+const CONFETTI_COLORS = ['#c97b1a', '#f4c771', '#fbbf24', '#fffaeb', '#4a2818', '#deb887', '#e8c897'];
+const CONFETTI_FLAG = ['#009246', '#ffffff', '#ce2b37', '#c97b1a', '#fbbf24'];
+
 function fireConfetti(intensity = 1) {
-  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
   const count = 60 * intensity;
-  const colors = ['#c97b1a', '#f4c771', '#10b981', '#ef4444', '#fffaeb', '#4a2818'];
   function shoot(angle, originX) {
-    confetti({ ...defaults, particleCount: count / 3, angle, spread: 70, origin: { x: originX, y: 0.7 }, colors });
+    confetti({
+      particleCount: count / 3, angle, spread: 70,
+      origin: { x: originX, y: 0.7 }, colors: CONFETTI_COLORS,
+      startVelocity: 32, ticks: 70, zIndex: 100, scalar: 0.9,
+    });
   }
   shoot(60, 0.2);
   shoot(120, 0.8);
-  setTimeout(() => shoot(90, 0.5), 150);
+  setTimeout(() => shoot(90, 0.5), 130);
 }
 
 function fireBigConfetti() {
-  const colors = ['#c97b1a', '#f4c771', '#10b981', '#ef4444', '#fffaeb', '#fbbf24', '#009246', '#ce2b37'];
-  const duration = 2400;
+  const duration = 2600;
   const end = Date.now() + duration;
   (function frame() {
-    confetti({ particleCount: 4, angle: 60, spread: 70, origin: { x: 0, y: 0.8 }, colors, zIndex: 100 });
-    confetti({ particleCount: 4, angle: 120, spread: 70, origin: { x: 1, y: 0.8 }, colors, zIndex: 100 });
+    confetti({
+      particleCount: 5, angle: 60, spread: 70, origin: { x: 0, y: 0.85 },
+      colors: CONFETTI_FLAG, startVelocity: 38, ticks: 80, zIndex: 100, scalar: 1.0,
+    });
+    confetti({
+      particleCount: 5, angle: 120, spread: 70, origin: { x: 1, y: 0.85 },
+      colors: CONFETTI_FLAG, startVelocity: 38, ticks: 80, zIndex: 100, scalar: 1.0,
+    });
     if (Date.now() < end) requestAnimationFrame(frame);
   })();
+  // Initial burst
+  confetti({
+    particleCount: 80, spread: 360, startVelocity: 22, ticks: 90,
+    origin: { x: 0.5, y: 0.5 }, colors: [...CONFETTI_FLAG, ...CONFETTI_COLORS], zIndex: 100, scalar: 1.1,
+  });
 }
 
 // ─── ROOT ────────────────────────────────────────────────────────────────────
@@ -900,20 +916,34 @@ function EspressoButton({ count, onUse }) {
 }
 
 function HintLayer({ stage }) {
+  // Stage 0: point at TAP BUTTON (bottom). Stage 1+: point at METER.
+  const config = stage === 0
+    ? { bottom: 142, label: 'TAP THE BUTTON', color: 'gold' }
+    : { bottom: 200, label: 'TAP WHEN GREEN', color: 'green' };
+  const bg = config.color === 'green' ? 'bg-successgreen' : 'bg-gold';
+  const shadow = config.color === 'green'
+    ? '0 6px 20px rgba(16,185,129,0.5)'
+    : '0 6px 20px rgba(201,123,26,0.5)';
   return (
-    <>
-      <div className="absolute bottom-[200px] left-4 right-4 z-[23] flex items-center justify-center pointer-events-none">
-        <div className="bg-successgreen text-white px-4 py-[7px] rounded-full text-[13px] font-extrabold tracking-tight" style={{ boxShadow: '0 6px 18px rgba(16,185,129,0.45)' }}>
-          {stage === 0 ? 'Tap when GREEN ✨' : 'Tap when GREEN ✨'}
+    <motion.div
+      key={stage}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0, bottom: config.bottom }}
+      transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+      className="absolute left-0 right-0 z-[23] flex justify-center pointer-events-none"
+    >
+      <div className="flex flex-col items-center gap-1">
+        <motion.div
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}
+          className="text-[44px] leading-none"
+          style={{ filter: 'drop-shadow(0 6px 12px rgba(201,123,26,0.45))' }}
+        >👇</motion.div>
+        <div className={`${bg} text-white px-4 py-[8px] rounded-full text-[12px] font-extrabold tracking-wider whitespace-nowrap`} style={{ boxShadow: shadow }}>
+          {config.label}
         </div>
       </div>
-      <div className="absolute bottom-[168px] left-1/2 z-[23] flex flex-col items-center gap-[6px] pointer-events-none hint-bounce" style={{ transform: 'translateX(-50%)' }}>
-        <div className="text-[38px] leading-none drop-shadow-[0_4px_8px_rgba(201,123,26,0.5)]">👇</div>
-        <div className="bg-gold text-white px-4 py-[7px] rounded-full text-[13px] font-extrabold tracking-tight whitespace-nowrap" style={{ boxShadow: '0 6px 18px rgba(201,123,26,0.5)' }}>
-          {stage === 0 ? 'TAP HERE' : 'TAP ON GREEN'}
-        </div>
-      </div>
-    </>
+    </motion.div>
   );
 }
 
@@ -950,14 +980,43 @@ function GameOver({ stats, onRestart, onHome }) {
   const isNew = saveBest(stats.length);
   const best = getBest();
 
-  let title = 'Servizio finito', verdict = '', stars = 0;
-  if (m < 30) { verdict = 'Even the Pret next door did better. Riprova!'; stars = 1; }
-  else if (m < 100) { verdict = "Respectable, but King's Road is unimpressed."; stars = 2; }
-  else if (m < 220) { verdict = 'Decent. A Sloane mum gives you a polite nod.'; stars = 3; }
-  else if (m < 275) { verdict = "So close to 275m. La nonna è triste, caro."; stars = 3; }
-  else if (m < 300) { title = 'Record broken!'; verdict = 'You beat 275m — but you promised Chelsea 300. Riprova!'; stars = 4; }
-  else if (m < 400) { title = '🏆 300 metri!'; verdict = 'Chelsea Town Hall erupts. The Cadogan Estate names a mews after you.'; stars = 5; }
-  else { title = '🏆 Leggenda!'; verdict = m.toFixed(0) + 'm — beyond legend. Even Stamford Bridge bows.'; stars = 5; }
+  let title = 'Servizio finito', verdict = '', closingScene = '', stars = 0;
+  if (m < 30) {
+    title = 'Curtain falls early';
+    verdict = "Even Pret across the road did better tonight. The cameras pack up. The crowd drifts to L'Eliseo for a proper one.";
+    closingScene = 'Riprova, caro.';
+    stars = 1;
+  } else if (m < 100) {
+    title = 'A modest evening';
+    verdict = "Respectable enough. Sloane mums give a polite nod, then leave for Granger & Co. King's Road moves on.";
+    closingScene = 'There is always tomorrow.';
+    stars = 2;
+  } else if (m < 220) {
+    title = 'A solid showing';
+    verdict = 'The pensioners stay till the end. Saatchi takes one photo. Vogue Italia does not call back.';
+    closingScene = 'Almost — but not yet.';
+    stars = 3;
+  } else if (m < 275) {
+    title = 'So close, caro';
+    verdict = 'Five metres from the record. La nonna sets down her spoon. Imola, watching from afar, exhales.';
+    closingScene = 'Riprova — you were inches away.';
+    stars = 3;
+  } else if (m < 300) {
+    title = '🏆 Record broken!';
+    verdict = "275m down. You beat the Italians at their own game — but you came for 300, didn't you? The crowd is delighted; the ego, less so.";
+    closingScene = 'A famous victory. Push for 300 next time.';
+    stars = 4;
+  } else if (m < 400) {
+    title = '🏆 300 METRI!';
+    verdict = 'Chelsea Town Hall erupts. La Repubblica leads with the headline. The Cadogan Estate offers you a mews. Roma weeps with envy. The pensioners give you a standing ovation.';
+    closingScene = 'A perfect night, darling.';
+    stars = 5;
+  } else {
+    title = '🏆 LEGGENDARIO';
+    verdict = m.toFixed(0) + "m. Beyond legend. Even Stamford Bridge bows. The Pope sends his blessing. Italian schoolchildren will study tonight in textbooks.";
+    closingScene = 'Buonissimo, leggenda.';
+    stars = 5;
+  }
 
   useEffect(() => {
     if (m >= 275) fireBigConfetti();
@@ -993,8 +1052,9 @@ function GameOver({ stats, onRestart, onHome }) {
         Best: <b className="text-ink font-extrabold">{fmt(best)}m</b>
         {isNew && <span className="text-gold font-extrabold px-2 py-1 bg-[rgba(201,123,26,0.12)] rounded-full text-[11px] tracking-wide uppercase">New PB!</span>}
       </div>
-      <p className="text-[14px] text-center text-ink2 leading-snug max-w-[320px] font-medium px-2">{verdict}</p>
-      <button onClick={onRestart} className="px-9 py-[13px] rounded-[14px] text-sm font-bold bg-cocoa text-mascarpone active:scale-[0.97] transition-transform mt-2">
+      <p className="text-[14px] text-center text-ink2 leading-snug max-w-[340px] font-medium px-2">{verdict}</p>
+      <p className="text-[12px] text-center text-gold italic font-bold leading-snug max-w-[320px] px-2 mt-1">{closingScene}</p>
+      <button onClick={onRestart} className="px-9 py-[13px] rounded-[14px] text-sm font-bold bg-cocoa text-mascarpone active:scale-[0.97] transition-transform mt-3">
         Play again
       </button>
       <button onClick={share} className="px-6 py-[11px] rounded-[14px] text-[12px] font-semibold bg-transparent text-ink2 border border-[rgba(74,40,24,0.18)] active:scale-[0.97] transition-transform">
@@ -1059,7 +1119,10 @@ function MemoryRound({ roundNum, onComplete }) {
         return;
       }
       setShowIdx(i);
-      sfx.tap();
+      const seqIdx = i;
+      const seqType = sequence[seqIdx];
+      const tIdx = seqType === 'lady' ? 0 : seqType === 'cream' ? 1 : 2;
+      sfx.memShow(tIdx);
       i += 1;
       setTimeout(() => {
         if (!alive) return;
