@@ -554,6 +554,11 @@ function Welcome({ onStart }) {
               </div>
             )}
 
+            {/* Sound hint — tells iPhone players to disable silent switch */}
+            <div className="text-[10px] text-ink3 italic mb-2 flex items-center justify-center gap-1.5">
+              <span>🔊</span><span>For full effect, turn the silent switch off</span>
+            </div>
+
             <button onClick={() => onStart(true)} className="block w-full py-3.5 rounded-[12px] text-[14px] font-extrabold uppercase tracking-wider mb-2 bg-cocoa text-mascarpone active:scale-[0.97] transition-transform">
               Begin
             </button>
@@ -821,10 +826,13 @@ function Game({ hintsOn, onEnd }) {
       sfx.perfect();
       statsRef.current.perfects += 1;
       if (newCombo > statsRef.current.maxCombo) statsRef.current.maxCombo = newCombo;
-      // Multiplier tier-up celebration
-      if (m.tier > prevTier && JOKES.multUp[m.mult]) {
+      // Multiplier tier-up — only celebrate ×5 and ×8 (not every tier; badge animates anyway)
+      if (m.tier > prevTier && (m.mult === 5 || m.mult === 8) && JOKES.multUp[m.mult]) {
         sfx.multUp(m.tier);
         showToast(pick(JOKES.multUp[m.mult]), 'green', 2400);
+      } else if (m.tier > prevTier) {
+        // Silent tier-up sound only — visual badge handles the rest
+        sfx.multUp(m.tier);
       }
       // Espresso earned at every 5 consecutive perfetti
       if (newCombo > 0 && newCombo % 5 === 0) {
@@ -918,7 +926,11 @@ function Game({ hintsOn, onEnd }) {
         setBuilderAnim('golden');
       } else {
         sfx.slice();
-        showToast('🍰 ' + pick(JOKES.slice), 'green', 2200);
+        // Slice-complete toast removed — slice flying into trough is feedback enough.
+        // Only show if it's the very first slice (helpful for new players).
+        if (statsRef.current.slices === 1) {
+          showToast('🍰 First slice! Keep stacking.', 'green', 2400);
+        }
         setBuilderAnim('complete');
       }
       // Push slice to trough
